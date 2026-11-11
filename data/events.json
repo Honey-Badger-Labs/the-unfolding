@@ -1,0 +1,250 @@
+{
+  "version": "0.1.0",
+  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch.",
+  "events": [
+    {
+      "id": "primordial-energy",
+      "stage": 0,
+      "tick": "Energy",
+      "title": "Primordial energy",
+      "label": "model",
+      "era": "0 to 380,000 years",
+      "scale": "no edge, no centre",
+      "note": "Hot, dense and almost uniform. Space itself is expanding, and tiny fluctuations will seed everything that follows. At 380,000 years the universe turns transparent.",
+      "age": [
+        0,
+        380000
+      ],
+      "sources": [
+        "nasa-universe",
+        "openstax-cmb"
+      ],
+      "camera": {
+        "dist": 3.4,
+        "fitW": 0,
+        "fitH": 0
+      }
+    },
+    {
+      "id": "cosmic-web",
+      "stage": 1,
+      "tick": "Web",
+      "title": "Structure emerges",
+      "label": "observed",
+      "era": "hundreds of millions of years on",
+      "scale": "about 500 million light-years across",
+      "note": "Gravity pulls dark matter and gas into filaments and nodes. Galaxy surveys map this web; the shape drawn here is procedural, not survey data.",
+      "age": [
+        200000000,
+        1000000000
+      ],
+      "sources": [
+        "nasa-cosmic-web"
+      ],
+      "camera": {
+        "dist": 5.6,
+        "fitW": 2.2,
+        "fitH": 0
+      }
+    },
+    {
+      "id": "young-galaxy-quasar",
+      "stage": 2,
+      "tick": "Quasar",
+      "title": "A young galaxy blazes",
+      "label": "observed",
+      "era": "about 10 billion years ago, when quasars peaked",
+      "scale": "tens of thousands of light-years, jets far beyond",
+      "note": "Inside one node of the web, galaxies collide and gas pours inward. Giant clumps of new stars, tidal tails, and a core outshining everything, firing twin jets.",
+      "age": [
+        2000000000,
+        4500000000
+      ],
+      "sources": [
+        "nature-quasar-peak"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 2.9,
+        "fitH": 2.4
+      }
+    },
+    {
+      "id": "galaxy-settles",
+      "stage": 3,
+      "tick": "Galaxy",
+      "title": "The galaxy settles",
+      "label": "observed",
+      "era": "over the next several billion years",
+      "scale": "about 100,000 light-years across",
+      "note": "The mergers calm down, the central black hole runs short of fuel and goes quiet, and the gas settles into a rotating spiral. The pattern here is procedural.",
+      "age": [
+        4000000000,
+        9000000000
+      ],
+      "sources": [
+        "nature-quasar-peak",
+        "nasa-universe"
+      ],
+      "camera": {
+        "dist": 5.6,
+        "fitW": 2.6,
+        "fitH": 1.7
+      }
+    },
+    {
+      "id": "supermassive-black-hole",
+      "stage": 4,
+      "tick": "Heart",
+      "title": "The dark heart",
+      "label": "observed",
+      "era": "at the centre of nearly every large galaxy",
+      "scale": "ours fits inside Mercury's orbit; the largest outsize the solar system",
+      "note": "A supermassive black hole. Telescopes have imaged the ring of light around two of them and tracked stars orbiting ours. This view is procedural.",
+      "age": null,
+      "sources": [
+        "physicstoday-sgra",
+        "nobel-2020"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 2.9,
+        "fitH": 1.7
+      }
+    },
+    {
+      "id": "stellar-nursery",
+      "stage": 5,
+      "tick": "Nursery",
+      "title": "A stellar nursery",
+      "label": "observed",
+      "era": "still happening today",
+      "scale": "tens of light-years across",
+      "note": "Back out in a spiral arm: a cold cloud of gas and dust, lit by young stars. Red is glowing hydrogen, teal is oxygen. Dense knots are where stars begin.",
+      "age": null,
+      "sources": [
+        "astronomy-narrowband"
+      ],
+      "camera": {
+        "dist": 5.6,
+        "fitW": 2.5,
+        "fitH": 1.7
+      }
+    },
+    {
+      "id": "cloud-collapse",
+      "stage": 6,
+      "tick": "Collapse",
+      "title": "A cloud collapses",
+      "label": "observed",
+      "era": "4.6 billion years ago, for our Sun",
+      "scale": "about 10,000 AU across",
+      "note": "One knot falls in on itself. Spin flattens the infalling gas into a disc, and the newborn star fires narrow jets from its poles.",
+      "age": [
+        9200000000,
+        9200000000
+      ],
+      "sources": [
+        "esa-webb-hh211",
+        "stardate-sun-life"
+      ],
+      "camera": {
+        "dist": 5.6,
+        "fitW": 2.4,
+        "fitH": 2.2
+      }
+    },
+    {
+      "id": "star-ignites",
+      "stage": 7,
+      "tick": "Star",
+      "title": "A star ignites",
+      "label": "observed",
+      "era": "within the first million years",
+      "scale": "about 200 AU across",
+      "note": "Fusion begins. Around the star, dust settles into a disc with rings and gaps, like those ALMA imaged around the young star HL Tauri.",
+      "age": [
+        9200000000,
+        9201000000
+      ],
+      "sources": [
+        "eso-hl-tau"
+      ],
+      "camera": {
+        "dist": 5.4,
+        "fitW": 2.5,
+        "fitH": 1.5
+      }
+    },
+    {
+      "id": "worlds-form",
+      "stage": 8,
+      "tick": "Worlds",
+      "title": "Worlds form",
+      "label": "model",
+      "era": "the next 100 million years or so",
+      "scale": "about 100 AU across",
+      "note": "Dust sticks, clumps and collides into planets: small rocky ones close in, giants beyond the frost line where ice survives. Sizes are exaggerated.",
+      "age": [
+        9200000000,
+        9300000000
+      ],
+      "sources": [
+        "osu-solar-system-birth",
+        "eso-hl-tau"
+      ],
+      "camera": {
+        "dist": 5.4,
+        "fitW": 2.9,
+        "fitH": 1.5
+      }
+    },
+    {
+      "id": "red-giant",
+      "stage": 9,
+      "tick": "Giant",
+      "title": "The star sheds its shell",
+      "label": "model",
+      "era": "about 5 billion years from now, for our Sun",
+      "scale": "about 2 AU across, and growing",
+      "note": "Our Sun will swell into a red giant, swallow its innermost planets and push its outer layers into space. Older Sun-like stars are doing this now.",
+      "age": [
+        18800000000,
+        20000000000
+      ],
+      "future": true,
+      "sources": [
+        "space-sun",
+        "stardate-sun-life"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 2.4,
+        "fitH": 2.4
+      }
+    },
+    {
+      "id": "nebula-eye",
+      "stage": 10,
+      "tick": "Eye",
+      "title": "The universe looks back",
+      "label": "observed",
+      "era": "about 5 billion years from now; the Helix shows it today",
+      "scale": "nearly 3 light-years across",
+      "note": "What our Sun will leave behind. The Helix Nebula, about 650 light-years away, is a real shell like this. The shape is procedural; the eye is our reading.",
+      "age": [
+        19000000000,
+        20000000000
+      ],
+      "future": true,
+      "sources": [
+        "nasa-helix"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 3.0,
+        "fitH": 2.5
+      }
+    }
+  ]
+}

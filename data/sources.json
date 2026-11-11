@@ -1,0 +1,96 @@
+{
+  "about": "Every source the Atlas cites. 'supports' says which claim the source backs, so a reviewer can check it quickly.",
+  "sources": [
+    {
+      "id": "nasa-universe",
+      "title": "Universe overview",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/universe/overview/",
+      "supports": "General chronology of the universe; starting reference for the project."
+    },
+    {
+      "id": "openstax-cmb",
+      "title": "The Cosmic Microwave Background (Astronomy 2e, 29.4)",
+      "publisher": "OpenStax",
+      "url": "https://openstax.org/books/astronomy/pages/29-4-the-cosmic-microwave-background",
+      "supports": "The early universe was hot and opaque until atoms formed a few hundred thousand years after the Big Bang, when it became transparent."
+    },
+    {
+      "id": "nasa-cosmic-web",
+      "title": "Slime Mold Simulations Used to Map Dark Matter Holding Universe Together",
+      "publisher": "NASA Science (Hubble)",
+      "url": "https://science.nasa.gov/missions/hubble/slime-mold-simulations-used-to-map-dark-matter-holding-universe-together/",
+      "supports": "The cosmic web is mostly dark matter laced with gas; galaxies form along its filaments, which are mapped from galaxy surveys."
+    },
+    {
+      "id": "nature-quasar-peak",
+      "title": "Quasars: Cosmic beacons (News & Views, Nature 514, 2014)",
+      "publisher": "Nature",
+      "url": "https://www.nature.com/articles/514043b.pdf",
+      "supports": "Quasar numbers peaked about 10 billion years ago and have declined steadily since."
+    },
+    {
+      "id": "physicstoday-sgra",
+      "title": "A portrait of the black hole at the heart of the Milky Way",
+      "publisher": "Physics Today",
+      "url": "https://physicstoday.aip.org/news/a-portrait-of-the-black-hole-at-the-heart-of-the-milky-way",
+      "supports": "EHT imaged M87* (2019) and Sgr A* (2022): a bright ring around a dark shadow. Sgr A*'s event horizon would not reach Mercury's orbit; M87*'s would reach about as far as Voyager 1."
+    },
+    {
+      "id": "nobel-2020",
+      "title": "Nobel Prize in Physics 2020, press release",
+      "publisher": "The Royal Swedish Academy of Sciences",
+      "url": "https://www.nobelprize.org/prizes/physics/2020/press-release/",
+      "supports": "Genzel and Ghez tracked stars orbiting an invisible, extremely heavy object at the centre of our galaxy."
+    },
+    {
+      "id": "astronomy-narrowband",
+      "title": "How to take Hubble-like photos: Filters and post-processing guide",
+      "publisher": "Astronomy magazine",
+      "url": "https://www.astronomy.com/observing/observing-basics-image-like-hubble/",
+      "supports": "Hydrogen-alpha emission is deep red; doubly ionised oxygen (OIII) is blue-green."
+    },
+    {
+      "id": "esa-webb-hh211",
+      "title": "Webb snaps supersonic outflow of young star (HH 211)",
+      "publisher": "ESA/Webb",
+      "url": "https://esawebb.org/news/weic2322/",
+      "supports": "A Class 0 protostar, an infant analogue of the Sun, fires a narrow bipolar jet."
+    },
+    {
+      "id": "stardate-sun-life",
+      "title": "Lifetime of a Star",
+      "publisher": "StarDate, McDonald Observatory",
+      "url": "https://stardate.org/astro-guide/featured-images/lifetime-star",
+      "supports": "The Sun was born about 4.6 billion years ago from a collapsing cloud of gas and dust."
+    },
+    {
+      "id": "eso-hl-tau",
+      "title": "Revolutionary ALMA Image Reveals Planetary Genesis (eso1436)",
+      "publisher": "ESO",
+      "url": "https://www.eso.org/public/news/eso1436/",
+      "supports": "The disc around the young star HL Tauri shows concentric bright rings separated by gaps, likely carved by forming planets."
+    },
+    {
+      "id": "osu-solar-system-birth",
+      "title": "The Birth of the Solar System (Astronomy 161)",
+      "publisher": "Ohio State University",
+      "url": "https://www.astronomy.ohio-state.edu/thompson.1847/161/origin.html",
+      "supports": "Small rocky planets formed in the hot inner nebula; giant planets formed beyond the frost line, where ices survive."
+    },
+    {
+      "id": "space-sun",
+      "title": "Earth's sun: Facts about the sun's age, size and history",
+      "publisher": "Space.com",
+      "url": "https://space.com/sun",
+      "supports": "The Sun has fuel for about another 5 billion years, then swells into a red giant, sheds its outer layers and leaves a white dwarf."
+    },
+    {
+      "id": "nasa-helix",
+      "title": "Iridescent Glory of Nearby Helix Nebula",
+      "publisher": "NASA Science (Hubble)",
+      "url": "https://science.nasa.gov/asset/hubble/iridescent-glory-of-nearby-helix-nebula",
+      "supports": "The Helix Nebula is about 650 light-years away; its ring is nearly 3 light-years across."
+    }
+  ]
+}

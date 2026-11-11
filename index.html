@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Unfolding Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: full-bleed particle canvas; one instrument strip pinned to the bottom. Single dark theme by choice. */
+  color-scheme: dark;
+  --void:#04040b;
+  --ink:#ece8df;
+  --dim:#8f8c9c;
+  --line:rgba(236,232,223,.16);
+  --gold:#e8b563;
+  --observed:#7fd6ff;
+  --model:#f2a55c;
+  --art:#e07bd0;
+  --display:"Cormorant Garamond","Iowan Old Style",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--mono);font-size:12px;line-height:1.5;overflow:hidden;-webkit-font-smoothing:antialiased}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.mark{position:fixed;top:14px;left:16px;right:16px;display:flex;justify-content:space-between;gap:12px;letter-spacing:.18em;text-transform:uppercase;font-size:10px;color:var(--dim);pointer-events:none}
+.mark b{color:var(--ink);font-weight:500}
+.hud{position:fixed;left:0;right:0;bottom:0;padding:44px 16px 16px;background:linear-gradient(to top,rgba(4,4,11,.92) 35%,rgba(4,4,11,0));display:flex;flex-direction:column;gap:12px}
+.inner{width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.read{display:flex;flex-direction:column;gap:6px;transition:opacity .35s}
+.read.swap{opacity:0}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+h1{font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(26px,5.2vw,40px);line-height:1.05;margin:0;text-wrap:balance}
+.chip{border:1px solid currentColor;border-radius:2px;padding:2px 7px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.chip.observed{color:var(--observed)}
+.chip.model{color:var(--model)}
+.chip.art{color:var(--art)}
+.meta{color:var(--dim)}
+.meta span{color:var(--ink)}
+.note{margin:0;max-width:62ch;color:var(--dim)}
+.ctl{display:flex;align-items:center;gap:12px}
+button{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:2px;padding:9px 12px;min-width:68px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;font-size:10px}
+button:hover{border-color:var(--gold);color:var(--gold)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.track{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:1px;background:var(--line)}
+input[type=range]::-moz-range-track{height:1px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);margin-top:-9px;box-shadow:0 0 18px rgba(232,181,99,.7)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(232,181,99,.7)}
+.ticks{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.ticks i{font-style:normal}
+.src{margin:0;font-size:10px;letter-spacing:.04em;color:var(--dim)}
+.src a{color:var(--dim);text-decoration:underline;text-underline-offset:2px}
+.src a:hover{color:var(--gold)}
+.fail{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center}
+@media (max-width:760px){.ticks i:not(:first-child):not(:last-child){display:none}}
+@media (max-width:520px){.note{font-size:11px}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 0.8</span></div>
+
+<div class="hud">
+  <div class="inner">
+    <div class="read" id="read">
+      <div class="row"><h1 id="title">The Unfolding</h1><span class="chip model" id="chip" hidden>Model-dependent</span></div>
+      <div class="meta row"><span id="era">13.8 billion years</span><span aria-hidden="true">/</span><span id="scale">one universe</span></div>
+      <p class="note" id="note">Loading the Atlas.</p>
+      <p class="src" id="src"></p>
+    </div>
+    <div class="ctl">
+      <button id="play" type="button">Play</button>
+      <div class="track">
+        <input id="t" type="range" min="0" max="10" step="0.001" value="0" aria-label="Position in the journey">
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <button id="q" type="button" title="Particle count">120k</button>
+    </div>
+  </div>
+</div>
+<div class="fail" id="fail">This prototype needs WebGL2. Open it in a current version of Chrome, Safari, Edge or Firefox.</div>
+
+<script>
+(function(){
+"use strict";
+
+var VS=`#version 300 es
+precision highp float;
+layout(location=0) in vec4 aSeed;
+uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift;
+uniform vec2 uField;
+out vec3 vCol;
+out float vA;
+const float PI=3.14159265;
+const float TAU=6.2831853;
+// a system like ours: four small rocky worlds, then giants beyond the ice line
+const float PR[8]=float[8](.3,.42,.56,.72,1.2,1.62,2.05,2.42);
+const float PS[8]=float[8](.008,.013,.014,.010,.05,.042,.028,.027);
+const vec3 PC[8]=vec3[8](vec3(.6,.55,.5),vec3(.95,.8,.5),vec3(.3,.55,1.),vec3(.9,.4,.25),vec3(.9,.7,.5),vec3(.95,.85,.6),vec3(.6,.9,.95),vec3(.3,.45,1.));
+vec3 s,r2,r3,g; float w;
+vec3 hash33(vec3 p){
+  p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6)));
+  return fract(sin(p)*43758.5453);
+}
+float hash13(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
+vec3 flow(vec3 p,float t){
+  return vec3(sin(p.y*1.7+t)+sin(p.z*2.3-t*.7),sin(p.z*1.9+t*.8)+sin(p.x*2.1+t),sin(p.x*1.5-t)+sin(p.y*2.7+t*.6));
+}
+mat2 rot(float a){float c=cos(a),s_=sin(a);return mat2(c,-s_,s_,c);}
+float ease(float x){x=clamp(x,0.,1.);return x*x*x*(x*(x*6.-15.)+10.);}
+vec3 nodePos(vec3 c){return (c+.5+(hash33(c)-.5)*.85)*.9;}
+
+void galaxy(out vec3 P,out vec3 C,out float S,out float A){
+  // a settled spiral: two arms, a quiet bulge
+  float bulge=step(r2.y,.16);
+  float rr=.05+2.5*pow(s.x,1.7);
+  float arm=floor(s.y*2.);
+  float sp=fract(s.y*2.)-.5; sp=sp*abs(sp)*4.;
+  float th=arm*PI+2.6*log(rr+.2)+sp*.9+uTime*.05;
+  P=vec3(rr*cos(th),rr*sin(th),g.z*.04);
+  P=mix(P,g*vec3(.22,.22,.16),bulge);
+  C=mix(vec3(.45,.6,1.),vec3(1.,.35,.6),step(.88,r3.z));
+  C=mix(C,vec3(1.,.8,.5),smoothstep(.9,.15,rr));
+  C=mix(C,vec3(1.,.72,.38),bulge);
+  S=.021; A=mix(.6,.5,bulge);
+  P.yz=rot(1.0)*P.yz;
+}
+
+void young(out vec3 P,out vec3 C,out float S,out float A){
+  // a young, gas-rich galaxy mid-merger: giant star-forming clumps, tidal tails,
+  // a blinding core fed by infalling gas, and twin jets
+  float kind=r3.z;
+  if(r2.y<.05){
+    P=g*.04; C=vec3(1.3,1.35,1.5); S=.032; A=.9;
+  }else if(r2.x<.18){
+    float side=r3.y<.5?1.:-1.;
+    float h=fract(r2.z+uTime*.1*(.6+r3.x));
+    float wj=.015+.1*h*h+.35*smoothstep(.8,1.,h);
+    P=vec3(g.x*wj,g.y*wj,side*(.08+2.8*h));
+    C=mix(vec3(.8,.9,1.2),vec3(.45,.4,1.),h)*(1.-.55*h);
+    S=.018; A=.7;
+  }else if(kind<.4){
+    float id=floor(r2.z*7.);
+    vec3 h=hash33(vec3(id,2.,5.));
+    float cr=.4+1.2*h.x;
+    float ca=h.y*TAU+uTime*.12/(cr+.3);
+    P=(vec3(cr*cos(ca),cr*sin(ca),(h.z-.5)*.3)+g*(.12+.16*h.z))*1.3;
+    C=mix(vec3(.55,.75,1.3),vec3(1.2,.45,.75),h.z)*(.5+.5*r2.x);
+    S=.024; A=.5;
+  }else if(kind<.62){
+    float side=r2.z<.5?1.:-1.;
+    float u=r3.x;
+    float a=side*1.7*u+(side>0.?.4:PI+.4)+uTime*.03;
+    float r=1.1+1.7*u;
+    P=(vec3(r*cos(a),r*sin(a),.3*side*u)+g*(.07+.24*u))*1.3;
+    C=vec3(.65,.6,1.)*(.7*(1.-u)+.2);
+    S=.02; A=.45;
+  }else{
+    float r=1.7*sqrt(r3.y);
+    float a=s.y*TAU+uTime*.1/(r+.3);
+    P=vec3(r*cos(a),r*sin(a),g.z*.28);
+    P+=flow(P*1.6,uTime*.08)*.2;
+    P*=1.3;
+    C=mix(vec3(1.,.35,.45),vec3(.5,.55,1.),r3.x)*.6;
+    S=.03; A=.4;
+  }
+  P.yz=rot(1.0)*P.yz;
+}
+
+void shape(int k,out vec3 P,out vec3 C,out float S,out float A){
+  if(k==0){
+    // primordial energy: fills the view, no centre
+    P=(s*2.-1.)*vec3(uField,2.2);
+    P+=flow(P*1.1,uTime*.6)*.22;
+    float n0=.5+.5*sin(P.x*1.3+P.y*1.9+P.z*1.1+uTime*.4);
+    C=mix(vec3(1.,.42,.1),vec3(1.,.14,.55),n0)+vec3(.7,.62,.5)*r2.x*r2.x;
+    S=.03+.05*r2.y; A=.5;
+  }else if(k==1){
+    // cosmic web: jittered nodes joined by curved filaments
+    vec3 c=floor((s*2.-1.)*3.);
+    vec3 na=nodePos(c);
+    float di=floor(r2.x*6.);
+    vec3 d=di<1.?vec3(1,0,0):di<2.?vec3(-1,0,0):di<3.?vec3(0,1,0):di<4.?vec3(0,-1,0):di<5.?vec3(0,0,1):vec3(0,0,-1);
+    vec3 cb=c+d;
+    vec3 nb=nodePos(cb);
+    vec3 em=(c+cb)*.5;
+    float isFil=step(.32,hash13(em*3.7+1.3))*step(.18,r2.y);
+    float u=r2.z;
+    vec3 curve=(hash33(em*5.1)-.5)*.55*sin(PI*u);
+    vec3 Pf=mix(na,nb,u)+curve+g*.03*(1.+2.5*r3.x*r3.x);
+    vec3 Pn=na+g*(.07+.3*r3.y*r3.y*r3.y);
+    P=mix(Pn,Pf,isFil);
+    P.xz=rot(uTime*.04)*P.xz;
+    C=mix(vec3(1.,.7,.34),mix(vec3(.2,.3,1.),vec3(.25,.7,1.),r3.z),isFil);
+    S=mix(.03,.024,isFil); A=mix(.5,.95,isFil);
+  }else if(k==2){
+    young(P,C,S,A);
+  }else if(k==3){
+    galaxy(P,C,S,A);
+  }else if(k==4){
+    // the dark heart: a supermassive black hole, its ring of light, its disc, and stars whipping round it
+    float kind=r3.z;
+    float a=s.y*TAU;
+    if(kind<.16){
+      float r=.62+abs(g.x)*.025;
+      float a2=a+uTime*.6;
+      P=vec3(r*cos(a2),r*sin(a2),0.);
+      C=vec3(1.,.84,.55)*(.5+.5*cos(a2-2.6));
+      S=.016; A=.8;
+    }else if(kind<.34){
+      float r=.66+.32*s.x*s.x;
+      float a2=a+uTime*.3;
+      P=vec3(r*cos(a2),r*sin(a2),0.);
+      C=vec3(1.,.5,.18)*(.3+.3*cos(a2-2.6))*(1.-smoothstep(.66,.98,r));
+      S=.022; A=.5;
+    }else if(kind<.94){
+      float r=.95+1.9*pow(s.x,1.6);
+      float th=a+uTime*1.6/pow(r,1.5);
+      P=vec3(r*cos(th),r*sin(th),g.z*.02*r);
+      P.yz=rot(1.3)*P.yz;
+      C=mix(vec3(1.,.9,.7),vec3(.9,.22,.07),smoothstep(.95,2.4,r));
+      C*=(.3+.7*(.5-.5*cos(th)))*(.7+.3*sin(r*18.+r2.x));
+      S=.02; A=.55;
+    }else{
+      float id=floor(s.x*14.);
+      vec3 h=hash33(vec3(id,4.,8.));
+      float sa=1.2+2.2*h.x, e=.3+.5*h.y;
+      float M=h.z*TAU+uTime*2.2/pow(sa,1.5);
+      float r=sa*(1.-e*e)/(1.+e*cos(M));
+      float om=hash13(vec3(id,9.,1.))*TAU;
+      P=vec3(r*cos(M+om),r*sin(M+om),0.);
+      P.yz=rot(hash13(vec3(id,5.,6.))*PI)*P.yz;
+      P+=g*.006;
+      C=mix(vec3(.6,.75,1.),vec3(1.,.8,.55),h.y)*.8; S=.016; A=.45;
+    }
+  }else if(k==5){
+    // stellar nursery: a cold cloud lit by young stars, with dense knots about to collapse
+    float kind=r3.z;
+    P=(s*2.-1.)*vec3(2.7,1.6,1.1);
+    P+=flow(P*1.3,uTime*.03)*.34;
+    P+=flow(P*2.9+7.,uTime*.05)*.14;
+    float n=sin(P.x*2.1+sin(P.y*3.)*1.3)+sin(P.y*1.7+P.z*2.);
+    float lit=smoothstep(-.5,.8,n);
+    C=mix(vec3(1.4,.32,.45),vec3(.2,.8,.75),smoothstep(.5,1.5,n+r2.x*.6))*(.14+.9*lit);
+    S=.034; A=.4;
+    if(kind<.12){
+      float id=floor(r2.x*5.);
+      vec3 kc=id<1.?vec3(.6,-.2,0.):(hash33(vec3(id,3.,1.))*2.-1.)*vec3(2.,1.1,.6);
+      P=kc+g*(.05+.12*r3.x*r3.x);
+      C=vec3(.9,.45,.2)*(.4+.5*r3.y); S=.022; A=.5;
+    }else if(kind<.16){
+      float id=floor(r2.x*40.);
+      P=(hash33(vec3(id,8.,2.))*2.-1.)*vec3(2.3,1.3,.8)+g*.006;
+      C=vec3(.7,.82,1.); S=.02; A=.5;
+    }
+  }else if(k==6){
+    // protostar: an infalling envelope, a small disc, a core not yet fusing, and polar jets
+    float kind=r3.z;
+    if(kind<.08){
+      P=g*.07; C=vec3(1.,.68,.38); S=.03; A=.8;
+    }else if(kind<.33){
+      float r=.14+.75*sqrt(s.x);
+      float th=s.y*TAU+uTime*.5/(pow(r,1.5)+.1);
+      P=vec3(r*cos(th),r*sin(th),g.z*.05*(.3+r));
+      C=mix(vec3(1.,.6,.25),vec3(.7,.25,.1),r); S=.02; A=.5;
+    }else if(kind<.78){
+      float ph=fract(s.x+uTime*.03);
+      float r=mix(2.3,.35,ph*ph);
+      vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+      d2.z*=mix(.9,.3,ph);
+      P=d2*r;
+      P.xy=rot(uTime*.25/(r+.3)+ph*2.)*P.xy;
+      C=vec3(.8,.34,.18)*(.6+.9*ph)*smoothstep(0.,.1,ph)*(1.-smoothstep(.9,1.,ph));
+      S=.03; A=.4;
+    }else{
+      float side=r3.y<.5?1.:-1.;
+      float h=fract(r2.z+uTime*.12);
+      float wj=.012+.05*h+.12*smoothstep(.85,1.,h);
+      P=vec3(g.x*wj,g.y*wj,side*(.1+2.3*h));
+      float knot=pow(.5+.5*sin(h*22.-uTime*1.5),4.);
+      C=mix(vec3(.5,.85,1.),vec3(1.,.45,.6),knot)*(.3+.9*knot)*(1.-.4*h);
+      S=.018; A=.7;
+    }
+    P.yz=rot(1.12)*P.yz;
+  }else if(k==7){
+    // the star ignites; its dusty disc shows rings and gaps
+    float rr=.12+2.3*sqrt(s.x);
+    rr+=.07*sin(rr*11.);
+    float th=s.y*TAU+uTime*.35/(pow(rr,1.5)+.15);
+    P=vec3(rr*cos(th),rr*sin(th),(s.z-.5)*.05*(1.+rr*1.5));
+    float core=step(r2.y,.09);
+    P=mix(P,g*.13,core);
+    C=mix(vec3(1.,.74,.3),vec3(.85,.4,.18),smoothstep(.3,1.6,rr));
+    C=mix(C,mix(vec3(.3,.7,.45),vec3(.8,.2,.12),r3.x),smoothstep(1.2,2.4,rr)*r3.z);
+    C=mix(C,vec3(1.,.93,.75),core);
+    S=mix(.02,.035,core); A=mix(.5,.85,core);
+    P.yz=rot(1.12)*P.yz;
+  }else if(k==8){
+    // worlds form: rocky planets close in, giants farther out, belts of leftovers
+    int ip=int(min(floor(s.x*8.),7.));
+    float pr=PR[ip];
+    float hp=hash13(vec3(float(ip),7.,3.));
+    float om=.18/(pow(pr,1.5)+.05);
+    float a=s.y*TAU+uTime*om;
+    float kind=r2.x;
+    S=.014; A=.6;
+    if(kind<.07){
+      float ph=hp*TAU+uTime*om;
+      P=vec3(pr*cos(ph),pr*sin(ph),0.)+g*PS[ip];
+      C=PC[ip]*(.6+.5*r3.x); S=.018;
+      A=max(.02,.12*pow(PS[ip]/.05,2.));
+    }else if(kind<.42){
+      P=vec3(pr*cos(a),pr*sin(a),0.)+g*.004;
+      C=vec3(.5,.5,.58)*.16;
+    }else if(kind<.56){
+      float r=.94+g.x*.07;
+      P=vec3(r*cos(a),r*sin(a),g.z*.02); C=vec3(.6,.5,.4)*.4; S=.012;
+    }else if(kind<.74){
+      float r=2.8+g.x*.14;
+      P=vec3(r*cos(a),r*sin(a),g.z*.05); C=vec3(.5,.6,.75)*.3; S=.012;
+    }else{
+      float r=.2+2.7*sqrt(r3.y);
+      P=vec3(r*cos(a),r*sin(a),g.z*.03); C=vec3(.5,.4,.3)*.07;
+    }
+    float core=step(r2.y,.07);
+    P=mix(P,g*.09,core);
+    C=mix(C,vec3(1.,.95,.8),core);
+    S=mix(S,.035,core); A=mix(A,.85,core);
+    P.yz=rot(1.12)*P.yz;
+  }else if(k==9){
+    // red giant: the swollen star pushes its outer layers off as shells
+    vec3 dir=normalize(g+vec3(1e-4));
+    float giant=step(r2.y,.4);
+    float ph=fract(floor(r3.x*4.)/4.+uTime*.03);
+    float R=.85+1.7*ph;
+    float rg=.8*pow(r3.y,.33)*(1.+.04*sin(uTime*.9));
+    vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+    P=mix(dir*(R+g.x*.03),d2*rg,giant);
+    vec3 shell=vec3(1.,.45,.2)*(1.-ph)*(1.-ph)+vec3(.15,.5,.6)*ph*(1.-ph)*2.;
+    C=mix(shell,mix(vec3(1.,.3,.1),vec3(1.,.65,.3),r3.z),giant);
+    S=mix(.02,.03,giant); A=mix(.55,.2,giant);
+  }else{
+    // nebula eye: a dying star's shed shell, read as an eye
+    float a=s.y*TAU;
+    float kind=r3.z;
+    float Nf=220.;
+    float fi=floor(s.y*Nf);
+    float fr=hash13(vec3(fi,1.,2.));
+    float lump=.13*sin(a*2.+.6)+.08*sin(a*5.+2.)+.05*sin(a*9.+uTime*.05);
+    float r; S=.03; A=.42;
+    if(kind<.02){
+      P=g*.02; C=vec3(.85,.95,1.); S=.034; A=.9;
+    }else if(kind<.14){
+      r=.72*sqrt(s.x);
+      P=vec3(r*cos(a),r*sin(a),g.z*.1);
+      C=vec3(.04,.16,.42)*(.35+.5*r2.x);
+    }else if(kind<.50){
+      float r0=.66+.2*fr;
+      r=r0+.75*pow(s.x,1.8);
+      float ak=(fi+.5)/Nf*TAU+(r3.x-.5)*(.012+.05*(r-r0));
+      P=vec3(r*cos(ak),r*sin(ak),g.z*.06);
+      C=mix(vec3(.25,1.,.9),vec3(.1,.4,.85),smoothstep(0.,.7,r-r0))*(.45+.8*fr);
+      S=.022; A=.5;
+    }else if(kind<.90){
+      r=1.55+lump+g.x*.3;
+      P=vec3(r*cos(a),r*sin(a),g.z*.12);
+      C=mix(vec3(1.,.6,.16),vec3(.95,.18,.1),smoothstep(1.45,2.1,r));
+      C=mix(vec3(.55,.85,.5),C,smoothstep(1.05,1.45,r));
+      C*=.55+.6*r2.x;
+    }else{
+      r=2.+lump+1.3*pow(s.x,1.5);
+      P=vec3(r*cos(a),r*sin(a),g.z*.2);
+      C=vec3(.7,.12,.1)*(1.-smoothstep(2.4,3.4,r))*.7;
+    }
+    P+=flow(P*2.2+fr,uTime*.15)*.035;
+    P.x*=1.2;
+    P.xy=rot(-.18)*P.xy;
+  }
+}
+
+void main(){
+  s=aSeed.xyz; w=aSeed.w;
+  r2=hash33(s*91.7+w*13.1);
+  r3=hash33(s.zxy*57.3+w*7.7);
+  g=(r2+r3+hash33(s.yzx*33.1+w)-1.5)*1.15;
+
+  float kf=min(floor(uT),__LAST__.);
+  int k=int(kf);
+  float f=ease((uT-kf)*1.5-.5*w);
+  vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
+  shape(k,Pa,Ca,Sa,Aa);
+  shape(k+1,Pb,Cb,Sb,Ab);
+
+  // changes of scale are real zooms: both shapes share one exponential camera move
+  float z=clamp(uT-kf,0.,1.);
+  float zs=z*z*(3.-2.*z);
+  float L=2.6;
+  float zoomed=0.;
+  if(k==1||k==3||k==5){
+    vec3 foc=vec3(0.);
+    if(k==1){foc=nodePos(vec3(0.));foc.xz=rot(uTime*.04)*foc.xz;}
+    if(k==5){foc=vec3(.6,-.2,0.);}
+    Pa=(Pa-foc*smoothstep(0.,.5,z))*exp(L*zs);
+    Pb*=exp(L*(zs-1.));
+    zoomed=1.;
+  }else if(k==4){
+    Pa=Pa*exp(-L*zs)+vec3(-2.4,1.2,0.)*zs;
+    Pb*=exp(L*(1.-zs));
+    zoomed=1.;
+  }else if(k==9){
+    // the giant shrinks to the white dwarf while its shells keep expanding
+    Pa*=exp(-1.8*zs);
+    zoomed=1.;
+  }
+
+  vec3 P=mix(Pa,Pb,f);
+  vec3 C=mix(Ca,Cb,f);
+  float S=mix(Sa,Sb,f);
+  float A=mix(Aa,Ab,f);
+
+  // the body swirls while it changes shape; less so during a zoom
+  float sw=sin(PI*f)*mix(1.,.3,zoomed);
+  P+=flow(P*.9+w*3.,uTime*.5)*.16*sw;
+  P.xy=rot(sw*(w-.35)*.9)*P.xy;
+  C+=vec3(.25,.12,.3)*sw*r2.x;
+
+  float dist=uCam-P.z;
+  float fo=2.1445;
+  if(dist<.06){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=1.;vCol=vec3(0.);vA=0.;return;}
+  gl_Position=vec4(P.x*fo/uAspect,P.y*fo+uShift*dist,0.,dist);
+  float ps=S*uPx*fo*.5/dist;
+  float ref=uPx*.012;
+  vA=A*uAlpha*min(1.,pow(ref/ps,1.3));
+  gl_PointSize=clamp(ps,1.,uPx*.07);
+  vCol=C;
+}`;
+
+var FS=`#version 300 es
+precision mediump float;
+in vec3 vCol;
+in float vA;
+out vec4 o;
+void main(){
+  vec2 d=gl_PointCoord-.5;
+  float r=dot(d,d)*4.;
+  float gl=exp(-r*3.5)*(1.-smoothstep(.8,1.,r));
+  o=vec4(vCol*vA*gl,1.);
+}`;
+
+var canvas=document.getElementById("c");
+var gl=canvas.getContext("webgl2",{antialias:false,alpha:false,powerPreference:"high-performance"});
+if(!gl){document.getElementById("fail").style.display="flex";return;}
+
+function sh(type,src){
+  var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(s));throw new Error("shader");}
+  return s;
+}
+var prog=gl.createProgram();
+// the shader draws SHAPE_COUNT shapes; the Atlas must have one event per shape (tests check this)
+var SHAPE_COUNT=11, LAST=SHAPE_COUNT-1;
+gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS.replace("__LAST__",String(LAST-1))));
+gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(prog));document.getElementById("fail").style.display="flex";return;}
+gl.useProgram(prog);
+var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+
+var COUNTS=[60000,120000,240000];
+var coarse=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches;
+var qi=coarse?0:1;
+var N=0, buf=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);
+var qBtn=document.getElementById("q");
+function setCount(i){
+  qi=i;N=COUNTS[qi];
+  var a=new Float32Array(N*4);
+  // deterministic seeds so every device and every captured frame shows the same universe
+  var x=123456789;
+  for(var k=0;k<a.length;k++){x^=x<<13;x^=x>>>17;x^=x<<5;a[k]=(x>>>0)/4294967296;}
+  gl.bufferData(gl.ARRAY_BUFFER,a,gl.STATIC_DRAW);
+  qBtn.textContent=(N/1000)+"k";
+}
+setCount(qi);
+qBtn.addEventListener("click",function(){setCount((qi+1)%COUNTS.length);});
+
+gl.disable(gl.DEPTH_TEST);
+gl.enable(gl.BLEND);
+gl.blendFunc(gl.ONE,gl.ONE);
+gl.clearColor(.012,.012,.03,1);
+
+var W=0,H=0,aspect=1;
+function resize(){
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  var w=Math.round(canvas.clientWidth*dpr),h=Math.round(canvas.clientHeight*dpr);
+  if(w!==W||h!==H){W=w;H=h;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);aspect=w/h;}
+}
+window.addEventListener("resize",resize);resize();
+
+var TAN=0.4663; // tan(25 deg)
+var CAMS=[], shift=0; // filled from each event's camera cue
+for(var c=0;c<SHAPE_COUNT;c++)CAMS.push({dist:5.6,fitW:2.6,fitH:1.8});
+var hudEl=document.querySelector('.hud');
+function cam(t){
+  var i=Math.min(LAST-1,Math.floor(t)),f=t-i;f=f*f*(3-2*f);
+  function d(k){var q=CAMS[k];return Math.max(q.dist,q.fitW/(TAN*aspect),q.fitH/(TAN*(1-shift)));}
+  return d(i)+(d(i+1)-d(i))*f;
+}
+
+var slider=document.getElementById("t"),playBtn=document.getElementById("play"),read=document.getElementById("read");
+var T=0,playing=false,shown=-1,swapTimer=0;
+var EVENTS=[],SOURCES={};
+var LABELS={observed:"Observed",model:"Model-dependent",art:"Artistic interpretation"};
+function showStage(i){
+  if(i===shown||!EVENTS[i])return;shown=i;
+  read.classList.add("swap");
+  clearTimeout(swapTimer);
+  swapTimer=setTimeout(function(){
+    var e=EVENTS[i];
+    document.getElementById("title").textContent=e.title;
+    var chip=document.getElementById("chip");chip.hidden=false;chip.textContent=LABELS[e.label];chip.className="chip "+e.label;
+    document.getElementById("era").textContent=e.era;
+    document.getElementById("scale").textContent=e.scale;
+    document.getElementById("note").textContent=e.note;
+    var src=document.getElementById("src");src.textContent="";
+    e.sources.forEach(function(id,k){
+      var so=SOURCES[id];if(!so)return;
+      src.appendChild(document.createTextNode(k?" · ":"Sources: "));
+      var a=document.createElement("a");a.href=so.url;a.target="_blank";a.rel="noopener";
+      a.textContent=so.publisher;a.title=so.title;src.appendChild(a);
+    });
+    read.classList.remove("swap");
+  },300);
+}
+function setT(v,fromSlider){
+  T=Math.max(0,Math.min(LAST,v));
+  if(!fromSlider)slider.value=T;
+  showStage(Math.round(T));
+}
+slider.addEventListener("input",function(){playing=false;playBtn.textContent="Play";setT(parseFloat(slider.value),true);});
+function toggle(){
+  if(!playing&&T>=LAST-.001)setT(0);
+  playing=!playing;playBtn.textContent=playing?"Pause":"Play";
+}
+playBtn.addEventListener("click",toggle);
+window.addEventListener("keydown",function(e){
+  if(e.target===slider)return;
+  if(e.code==="Space"){e.preventDefault();toggle();}
+  else if(e.code==="ArrowRight"){playing=false;playBtn.textContent="Play";setT(T+.02);}
+  else if(e.code==="ArrowLeft"){playing=false;playBtn.textContent="Play";setT(T-.02);}
+});
+
+slider.max=LAST;
+function getJSON(u){return fetch(u).then(function(r){if(!r.ok)throw new Error(u+" "+r.status);return r.json();});}
+Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(function(d){
+  EVENTS=d[0].events.slice().sort(function(a,b){return a.stage-b.stage;}).slice(0,SHAPE_COUNT);
+  d[1].sources.forEach(function(so){SOURCES[so.id]=so;});
+  if(EVENTS.length!==SHAPE_COUNT)console.warn("Atlas has "+EVENTS.length+" events; the renderer draws "+SHAPE_COUNT+" shapes.");
+  var ticks=document.getElementById("ticks"),names={};
+  EVENTS.forEach(function(e,k){
+    if(e.camera)CAMS[k]=e.camera;
+    var i=document.createElement("i");i.textContent=e.tick;ticks.appendChild(i);
+    names[e.tick.toLowerCase()]=k;
+  });
+  // optional start position: #galaxy, or #t250 for stage 2.5
+  var h=(location.hash||"").replace("#","");
+  if(/^t\d+$/.test(h))names[h]=parseInt(h.slice(1),10)/100;
+  if(names[h]!==undefined)setT(names[h]);
+  shown=-1;showStage(Math.round(T));
+}).catch(function(err){
+  console.error(err);
+  document.getElementById("title").textContent="The Unfolding";
+  document.getElementById("note").textContent="The Atlas could not be loaded, so stage notes are unavailable. The visuals still run.";
+});
+
+var last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("fps");
+function frame(now){
+  var dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
+  if(playing){
+    var fr=T-Math.floor(T);var sp=.035+.14*Math.pow(Math.sin(Math.PI*fr),2);
+    setT(T+sp*dt);
+    if(T>=LAST){playing=false;playBtn.textContent="Replay";}
+  }
+  resize();
+  shift=Math.min(.45,Math.max(0,(hudEl.offsetHeight-44)/Math.max(1,canvas.clientHeight)));
+  var D=cam(T);
+  gl.uniform1f(U.uShift,shift);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform1f(U.uT,T);
+  gl.uniform1f(U.uTime,time);
+  gl.uniform1f(U.uAspect,aspect);
+  gl.uniform1f(U.uPx,H);
+  gl.uniform1f(U.uCam,D);
+  gl.uniform1f(U.uAlpha,.42*Math.sqrt(120000/N));
+  gl.uniform2f(U.uField,Math.max(1.5,2.8*aspect),2.8*(1+shift));
+  gl.drawArrays(gl.POINTS,0,N);
+  frames++;acc+=dt;
+  if(acc>=1){fpsEl.textContent="prototype 0.8 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
