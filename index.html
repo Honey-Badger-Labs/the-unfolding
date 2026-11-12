@@ -86,7 +86,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.4</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.5</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -747,7 +747,7 @@ var sndBtn=document.getElementById("snd"),AC=null,SND=null,soundOn=false,ended=f
 function wakeSound(){if(ended){ended=false;if(SND&&soundOn)SND.setOn(true,3);}}
 sndBtn.addEventListener("click",function(){
   try{
-    if(!AC){var Ctx=window.AudioContext||window.webkitAudioContext;try{AC=new Ctx({latencyHint:"playback"});}catch(e){AC=new Ctx();}SND=createSoundtrack(AC,AC.destination);}
+    if(!AC){var Ctx=window.AudioContext||window.webkitAudioContext;try{AC=new Ctx({latencyHint:"playback"});}catch(e){AC=new Ctx();}SND=createSoundtrack(AC,AC.destination);SND.prime();}
     soundOn=!soundOn;ended=false;
     if(soundOn)AC.resume();
     SND.setOn(soundOn);
@@ -790,7 +790,7 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
   document.getElementById("note").textContent="The Atlas could not be loaded, so stage notes are unavailable. The visuals still run.";
 });
 
-var last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("fps");
+var warm=0,last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("fps");
 function frame(now){
   var dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
   if(playing){
@@ -832,8 +832,17 @@ function frame(now){
   // a zoom draws the arriving scene too
   if(zm!==0&&T-kk>0){gl.uniform1f(U.uPass,1);gl.drawArrays(gl.POINTS,0,N);}
   if(SND&&soundOn)SND.update(T,zm);
+  // warm-up: once the Atlas is in, draw every stage and zoom pass once, invisibly, one per frame
+  if(EVENTS.length&&warm<LAST*2){
+    var wk=warm>>1;
+    gl.colorMask(false,false,false,false);
+    gl.uniform1f(U.uT,wk+.5);gl.uniform1f(U.uZoom,TRANS[wk]||0);gl.uniform1f(U.uPass,warm&1);
+    gl.drawArrays(gl.POINTS,0,N);
+    gl.colorMask(true,true,true,true);
+    warm++;
+  }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 1.4 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 1.5 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

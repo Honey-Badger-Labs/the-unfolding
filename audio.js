@@ -237,11 +237,14 @@
     chain(noise(), rushFilter, rush, mix);
 
     var LEVEL = 0.8, lastUpdate = -1;
+    var primeQueue = [], primeAt = 0;
     function smooth(param, value, now, tc) { param.setTargetAtTime(value, now, tc || 0.12); }
 
     return {
       voices: voices,
       // turn the whole soundtrack up or down
+      // start every voice once, silently, so the first journey has no first-time hiccups
+      prime: function () { primeQueue = voices.slice(); primeAt = 0; },
       // seconds: roughly how long the fade takes
       setOn: function (on, seconds) { smooth(master.gain, on ? LEVEL : 0, ctx.currentTime, (seconds || 1.6) / 4); },
       // call every frame with the timeline position and how the current transition moves
@@ -249,13 +252,20 @@
         var now = ctx.currentTime;
         if (now - lastUpdate < 0.05) return;
         lastUpdate = now;
+        // warm-up: start each voice once, silently, one at a time, then switch it off again
+        if (primeQueue.length && now >= primeAt) {
+          var pv = primeQueue.shift();
+          if (!pv.out) { wake(pv); pv.primed = now; }
+          primeAt = now + 0.15;
+        }
         var nextUp = Math.floor(T) + 1;
         voices.forEach(function (v, k) {
           var w = Math.max(0, 1 - Math.abs(T - k));
           w = Math.sin(w * Math.PI / 2);            // equal-power crossfade
           // the next stage's voice starts early and silently, so it is not built in the busiest moment
-          if (w > 0.001 || k === nextUp) { wake(v); v.quietSince = 0; }
+          if (w > 0.001 || k === nextUp) { wake(v); v.quietSince = 0; v.primed = 0; }
           if (!v.out) return;
+          if (v.primed) { if (now - v.primed > 0.25) { sleep(v, now); v.primed = 0; } return; }
           smooth(v.out.gain, w, now);
           if (w <= 0.001) {
             if (!v.quietSince) v.quietSince = now;
