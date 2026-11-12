@@ -744,7 +744,7 @@ playBtn.addEventListener("click",toggle);
 var sndBtn=document.getElementById("snd"),AC=null,SND=null,soundOn=false;
 sndBtn.addEventListener("click",function(){
   try{
-    if(!AC){var Ctx=window.AudioContext||window.webkitAudioContext;AC=new Ctx();SND=createSoundtrack(AC,AC.destination);}
+    if(!AC){var Ctx=window.AudioContext||window.webkitAudioContext;try{AC=new Ctx({latencyHint:"playback"});}catch(e){AC=new Ctx();}SND=createSoundtrack(AC,AC.destination);}
     soundOn=!soundOn;
     if(soundOn)AC.resume();
     SND.setOn(soundOn);

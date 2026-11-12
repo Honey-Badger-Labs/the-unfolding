@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Soundtrack sweep check</title></head>
+<body>
+<pre id="out">rendering</pre>
+<script src="../audio.js"></script>
+<script>
+// Plays the whole journey offline (SECONDS_PER_STAGE per stage, using the Atlas transitions)
+// and reports clipping, silent gaps, loudness and how hard the audio engine works.
+(async function () {
+  var SECONDS_PER_STAGE = 5, RATE = 44100, STEP = 0.05;
+  var atlas = await (await fetch("../data/events.json")).json();
+  var ev = atlas.events.slice().sort(function (a, b) { return a.stage - b.stage; });
+  var last = ev.length - 1, total = last * SECONDS_PER_STAGE + 2;
+  var zoomOf = ev.map(function (e) {
+    var t = e.transition; return !t || t.type === "morph" ? 0 : t.type === "zoom-in" ? t.depth : -t.depth;
+  });
+  var ctx = new OfflineAudioContext(2, Math.ceil(RATE * total), RATE);
+  var snd = createSoundtrack(ctx, ctx.destination);
+  snd.setOn(true);
+  function at(time) { return Math.min(last, time / SECONDS_PER_STAGE); }
+  for (var t = 0; t < total - STEP; t += STEP) {
+    (function (time) {
+      ctx.suspend(time).then(function () {
+        var T = at(time); snd.update(T, zoomOf[Math.min(last - 1, Math.floor(T))]); ctx.resume();
+      });
+    })(Math.round(t / STEP) * STEP);
+  }
+  var started = performance.now();
+  var buf = await ctx.startRendering();
+  var renderMs = performance.now() - started;
+
+  var L = buf.getChannelData(0), R = buf.getChannelData(1);
+  var peak = 0, clipped = 0, win = Math.floor(RATE * 0.25), quietest = 0, quietAt = 0, silentWindows = 0;
+  var skip = RATE * 1.5; // ignore the fade-in
+  for (var i = 0; i < L.length; i++) {
+    var a = Math.max(Math.abs(L[i]), Math.abs(R[i]));
+    if (a > peak) peak = a;
+    if (a >= 0.999) clipped++;
+  }
+  quietest = 1;
+  for (var w = skip; w + win < L.length; w += win) {
+    var sum = 0;
+    for (var j = w; j < w + win; j++) sum += L[j] * L[j];
+    var rms = Math.sqrt(sum / win);
+    if (rms < quietest) { quietest = rms; quietAt = w / RATE; }
+    if (rms < 0.003) silentWindows++;
+  }
+  var db = function (x) { return (20 * Math.log10(x + 1e-9)).toFixed(1) + " dB"; };
+  document.getElementById("out").textContent = [
+    "seconds rendered  " + total.toFixed(0),
+    "peak              " + db(peak),
+    "clipped samples   " + clipped,
+    "quietest 0.25 s   " + db(quietest) + " at " + quietAt.toFixed(1) + " s (stage " + at(quietAt).toFixed(2) + ")",
+    "silent windows    " + silentWindows + "  (below -50 dB)",
+    "render speed      " + (total * 1000 / renderMs).toFixed(1) + "x real time"
+  ].join("\n");
+})().catch(function (e) { document.getElementById("out").textContent = "ERROR " + e; });
+</script>
+</body>
+</html>

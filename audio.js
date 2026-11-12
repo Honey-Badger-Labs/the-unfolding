@@ -10,11 +10,14 @@
 
   function createSoundtrack(ctx, dest) {
     // ---------- building blocks
+    // sources made while a voice is being built are collected here, so the voice can be switched off
+    var building = null;
+    function own(src) { if (building) building.push(src); return src; }
     function gain(v) { var g = ctx.createGain(); g.gain.value = v; return g; }
     function osc(type, f, detune) {
       var o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
       if (detune) o.detune.value = detune;
-      o.start(); return o;
+      o.start(); return own(o);
     }
     function filt(type, f, q) {
       var b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f;
@@ -31,11 +34,12 @@
     })();
     function noise() {
       var n = ctx.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
-      n.loopStart = Math.random() * 3; n.start(0, Math.random() * 3); return n;
+      n.start(0, Math.random() * 3); return own(n);
     }
     function impulse(seconds, decay) {
-      var len = Math.floor(ctx.sampleRate * seconds), b = ctx.createBuffer(2, len, ctx.sampleRate);
-      for (var c = 0; c < 2; c++) {
+      // a single-channel tail: every voice is mono, so one convolution does the work of four
+      var len = Math.floor(ctx.sampleRate * seconds), b = ctx.createBuffer(1, len, ctx.sampleRate);
+      for (var c = 0; c < 1; c++) {
         var d = b.getChannelData(c);
         for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
       }
@@ -57,24 +61,40 @@
       o.start(when); o.stop(when + decay + 0.05);
     }
 
-    // ---------- master: compressor, plus a long generated reverb
+    // ---------- master: remove sub-bass small speakers cannot play, glue, a short reverb, a limiter
     var master = gain(0);
+    var hp = filt("highpass", 42, 0.7);
     var comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -20; comp.ratio.value = 3; comp.attack.value = 0.05; comp.release.value = 0.4;
-    var verb = ctx.createConvolver(); verb.buffer = impulse(5, 2.4);
-    var mix = gain(1), wet = gain(0.5);
-    chain(mix, comp); chain(mix, verb, wet, comp); chain(comp, master, dest);
+    var limit = ctx.createDynamicsCompressor();
+    limit.threshold.value = -4; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = 0.003; limit.release.value = 0.2;
+    var verb = ctx.createConvolver(); verb.buffer = impulse(2.8, 2.6);
+    var mix = gain(1), wet = gain(0.4);
+    chain(mix, hp, comp); chain(hp, verb, wet, comp); chain(comp, limit, master, dest);
 
     // per-voice trims, measured with tests/audio-levels.html so every stage sits near the same loudness
     // (the deepest voices sit a little higher, since the ear hears bass as quieter)
     var TRIM = { energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.77,
-                 nursery: 2.24, collapse: 1.0, star: 1.33, worlds: 2.6, giant: 0.85, eye: 1.41 };
+                 nursery: 2.24, collapse: 0.6, star: 1.33, worlds: 2.6, giant: 0.85, eye: 1.41 };
     var voices = [];
     function voice(name, build) {
-      var out = gain(0), trim = gain(TRIM[name] || 1);
-      out.connect(trim); trim.connect(mix);
-      var v = { name: name, out: out, tick: null, next: 0 };
-      build(out, v); voices.push(v); return v;
+      var trim = gain(TRIM[name] || 1); trim.connect(mix);
+      var v = { name: name, build: build, trim: trim, out: null, sources: [], tick: null, next: 0, quietSince: 0 };
+      voices.push(v); return v;
+    }
+    // start a voice's generators
+    function wake(v) {
+      if (v.out) return;
+      v.out = gain(0); v.out.connect(v.trim);
+      building = []; v.build(v.out, v); v.sources = building; building = null;
+      v.next = 0;
+    }
+    // stop them once the voice has faded out
+    function sleep(v, now) {
+      if (!v.out) return;
+      v.sources.forEach(function (src) { try { src.stop(now + 0.05); } catch (e) {} });
+      var out = v.out; setTimeout(function () { try { out.disconnect(); } catch (e) {} }, 200);
+      v.out = null; v.sources = []; v.tick = null;
     }
 
     // ---------- the twelve stage voices
@@ -130,18 +150,20 @@
     // 4 a galaxy like ours: a warm, slowly breathing D minor 9 pad
     voice("galaxy", function (o) {
       var lp = filt("lowpass", 1100, 1); lfo(0.05, 400, lp.frequency);
-      [0, 3, 7, 10, 14].forEach(function (s) {
-        chain(osc("sawtooth", hz(12 + s), -8), lp);
-        chain(osc("sawtooth", hz(12 + s), 8), lp);
+      [0, 3, 7, 10, 14].forEach(function (s, i) {
+        chain(osc("sawtooth", hz(12 + s), (i % 2 ? 6 : -6)), lp);
       });
-      chain(lp, gain(0.03), o);
+      chain(osc("sawtooth", hz(12), 9), lp);
+      chain(lp, gain(0.04), o);
       chain(osc("sine", hz(0)), gain(0.14), o);
     });
 
     // 5 the dark heart: a slow heartbeat at the edge of hearing, deep rumble, one eerie high tone
     voice("heart", function (o) {
       var beat = gain(0.25); lfo(0.8, 0.25, beat.gain);
-      chain(osc("sine", hz(-14)), beat, o);
+      chain(osc("sine", hz(-5)), beat, o);
+      var beat2 = gain(0.08); lfo(0.8, 0.08, beat2.gain);
+      chain(osc("sine", hz(7)), beat2, o);
       chain(noise(), filt("lowpass", 110, 1), gain(0.35), o);
       var high = osc("sine", hz(39)); lfo(0.3, 8, high.detune);
       chain(high, gain(0.018), o);
@@ -214,7 +236,7 @@
     var rushFilter = filt("bandpass", 400, 1.2), rush = gain(0);
     chain(noise(), rushFilter, rush, mix);
 
-    var LEVEL = 0.9;
+    var LEVEL = 0.8, lastUpdate = -1;
     function smooth(param, value, now, tc) { param.setTargetAtTime(value, now, tc || 0.12); }
 
     return {
@@ -224,11 +246,19 @@
       // call every frame with the timeline position and how the current transition moves
       update: function (T, zoom) {
         var now = ctx.currentTime;
+        if (now - lastUpdate < 0.05) return;
+        lastUpdate = now;
         voices.forEach(function (v, k) {
           var w = Math.max(0, 1 - Math.abs(T - k));
           w = Math.sin(w * Math.PI / 2);            // equal-power crossfade
+          if (w > 0.001) { wake(v); v.quietSince = 0; }
+          if (!v.out) return;
           smooth(v.out.gain, w, now);
-          if (v.tick && w > 0.05) v.tick(now, 0.25);
+          if (w <= 0.001) {
+            if (!v.quietSince) v.quietSince = now;
+            else if (now - v.quietSince > 1.5) sleep(v, now);
+          }
+          if (v.tick && w > 0.05) v.tick(now, 0.3);
         });
         var k = Math.floor(T), fr = T - k, swell = Math.pow(Math.sin(Math.PI * fr), 1.5);
         if (zoom > 0) { smooth(rush.gain, 0.22 * swell, now); smooth(rushFilter.frequency, 150 * Math.pow(30, fr), now, 0.05); }
@@ -237,7 +267,7 @@
       },
       // for level checks: play one voice alone
       solo: function (i) {
-        voices.forEach(function (v, k) { v.out.gain.value = k === i ? 1 : 0; });
+        voices.forEach(function (v, k) { if (k === i) { wake(v); v.out.gain.value = 1; } });
         master.gain.value = LEVEL;
         if (voices[i].tick) voices[i].tick(0, 8);
       }
