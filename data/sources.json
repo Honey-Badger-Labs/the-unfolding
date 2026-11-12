@@ -91,6 +91,20 @@
       "publisher": "NASA Science (Hubble)",
       "url": "https://science.nasa.gov/asset/hubble/iridescent-glory-of-nearby-helix-nebula",
       "supports": "The Helix Nebula is about 650 light-years away; its ring is nearly 3 light-years across."
+    },
+    {
+      "id": "esa-webb-spiderweb",
+      "title": "Webb finds surprises in Spiderweb protocluster field (weic2428)",
+      "publisher": "ESA/Webb",
+      "url": "https://esawebb.org/news/weic2428",
+      "supports": "The Spiderweb protocluster is a galaxy cluster in formation, with more than a hundred known galaxies, seen as it was over 10 billion years ago."
+    },
+    {
+      "id": "jpl-milky-way-arms",
+      "title": "Two of the Milky Way's Spiral Arms Go Missing",
+      "publisher": "NASA/JPL",
+      "url": "https://www.jpl.nasa.gov/news/two-of-the-milky-ways-spiral-arms-go-missing/",
+      "supports": "Spitzer showed the Milky Way has two major arms (Scutum-Centaurus and Perseus) joined to the ends of a central bar, with two minor arms between them."
     }
   ]
 }

@@ -71,3 +71,16 @@ test("every source is complete and used", () => {
     assert.ok(used.has(s.id), `${s.id} is not cited by any event`);
   }
 });
+
+test("every stage but the last says how the journey leaves it", () => {
+  const sorted = [...events].sort((a, b) => a.stage - b.stage);
+  sorted.forEach((e, i) => {
+    if (i === sorted.length - 1) {
+      assert.equal(e.transition, undefined, "the last stage has nowhere to go");
+      return;
+    }
+    const t = e.transition;
+    assert.ok(t && ["morph", "zoom-in", "zoom-out"].includes(t.type), `${e.id} needs a transition of morph, zoom-in or zoom-out`);
+    if (t.type !== "morph") assert.ok(t.depth > 0 && t.depth < 6, `${e.id} zoom depth should be between 0 and 6`);
+  });
+});

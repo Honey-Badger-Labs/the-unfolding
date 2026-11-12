@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
-  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch.",
+  "version": "0.2.0",
+  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, or a zoom in or out by 'depth' e-folds of scale.",
   "events": [
     {
       "id": "primordial-energy",
@@ -23,6 +23,9 @@
         "dist": 3.4,
         "fitW": 0,
         "fitH": 0
+      },
+      "transition": {
+        "type": "morph"
       }
     },
     {
@@ -45,17 +48,47 @@
         "dist": 5.6,
         "fitW": 2.2,
         "fitH": 0
+      },
+      "transition": {
+        "type": "zoom-in",
+        "depth": 2.8
+      }
+    },
+    {
+      "id": "protocluster",
+      "stage": 2,
+      "tick": "Cluster",
+      "title": "A city of galaxies",
+      "label": "observed",
+      "era": "about 10 billion years ago",
+      "scale": "a few million light-years across",
+      "note": "The bright knot resolves into dozens of young galaxies with empty space between them, pulled together by gravity. Webb sees clusters like this forming, such as the Spiderweb.",
+      "age": [
+        3000000000,
+        4500000000
+      ],
+      "sources": [
+        "esa-webb-spiderweb"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 2.7,
+        "fitH": 2.0
+      },
+      "transition": {
+        "type": "zoom-in",
+        "depth": 3.3
       }
     },
     {
       "id": "young-galaxy-quasar",
-      "stage": 2,
+      "stage": 3,
       "tick": "Quasar",
       "title": "A young galaxy blazes",
       "label": "observed",
       "era": "about 10 billion years ago, when quasars peaked",
       "scale": "tens of thousands of light-years, jets far beyond",
-      "note": "Inside one node of the web, galaxies collide and gas pours inward. Giant clumps of new stars, tidal tails, and a core outshining everything, firing twin jets.",
+      "note": "Inside the cluster, one smudge up close: a young galaxy with giant clumps of new stars, tidal tails, and a core outshining everything, firing twin jets.",
       "age": [
         2000000000,
         4500000000
@@ -67,34 +100,41 @@
         "dist": 5.8,
         "fitW": 2.9,
         "fitH": 2.4
+      },
+      "transition": {
+        "type": "morph"
       }
     },
     {
       "id": "galaxy-settles",
-      "stage": 3,
+      "stage": 4,
       "tick": "Galaxy",
-      "title": "The galaxy settles",
+      "title": "A galaxy like ours",
       "label": "observed",
       "era": "over the next several billion years",
       "scale": "about 100,000 light-years across",
-      "note": "The mergers calm down, the central black hole runs short of fuel and goes quiet, and the gas settles into a rotating spiral. The pattern here is procedural.",
+      "note": "Mergers calm, the black hole goes quiet, and the gas settles into a barred spiral like the Milky Way: two major arms off the bar, two minor ones, dust lanes and pink star-forming regions.",
       "age": [
         4000000000,
         9000000000
       ],
       "sources": [
-        "nature-quasar-peak",
-        "nasa-universe"
+        "jpl-milky-way-arms",
+        "nature-quasar-peak"
       ],
       "camera": {
-        "dist": 5.6,
-        "fitW": 2.6,
-        "fitH": 1.7
+        "dist": 5.8,
+        "fitW": 3.0,
+        "fitH": 1.8
+      },
+      "transition": {
+        "type": "zoom-in",
+        "depth": 3.4
       }
     },
     {
       "id": "supermassive-black-hole",
-      "stage": 4,
+      "stage": 5,
       "tick": "Heart",
       "title": "The dark heart",
       "label": "observed",
@@ -110,11 +150,15 @@
         "dist": 5.8,
         "fitW": 2.9,
         "fitH": 1.7
+      },
+      "transition": {
+        "type": "zoom-out",
+        "depth": 2.6
       }
     },
     {
       "id": "stellar-nursery",
-      "stage": 5,
+      "stage": 6,
       "tick": "Nursery",
       "title": "A stellar nursery",
       "label": "observed",
@@ -129,11 +173,15 @@
         "dist": 5.6,
         "fitW": 2.5,
         "fitH": 1.7
+      },
+      "transition": {
+        "type": "zoom-in",
+        "depth": 3.1
       }
     },
     {
       "id": "cloud-collapse",
-      "stage": 6,
+      "stage": 7,
       "tick": "Collapse",
       "title": "A cloud collapses",
       "label": "observed",
@@ -152,11 +200,14 @@
         "dist": 5.6,
         "fitW": 2.4,
         "fitH": 2.2
+      },
+      "transition": {
+        "type": "morph"
       }
     },
     {
       "id": "star-ignites",
-      "stage": 7,
+      "stage": 8,
       "tick": "Star",
       "title": "A star ignites",
       "label": "observed",
@@ -174,11 +225,14 @@
         "dist": 5.4,
         "fitW": 2.5,
         "fitH": 1.5
+      },
+      "transition": {
+        "type": "morph"
       }
     },
     {
       "id": "worlds-form",
-      "stage": 8,
+      "stage": 9,
       "tick": "Worlds",
       "title": "Worlds form",
       "label": "model",
@@ -197,11 +251,14 @@
         "dist": 5.4,
         "fitW": 2.9,
         "fitH": 1.5
+      },
+      "transition": {
+        "type": "morph"
       }
     },
     {
       "id": "red-giant",
-      "stage": 9,
+      "stage": 10,
       "tick": "Giant",
       "title": "The star sheds its shell",
       "label": "model",
@@ -221,11 +278,14 @@
         "dist": 5.8,
         "fitW": 2.4,
         "fitH": 2.4
+      },
+      "transition": {
+        "type": "morph"
       }
     },
     {
       "id": "nebula-eye",
-      "stage": 10,
+      "stage": 11,
       "tick": "Eye",
       "title": "The universe looks back",
       "label": "observed",

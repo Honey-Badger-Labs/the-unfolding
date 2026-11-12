@@ -62,7 +62,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 0.9</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.0</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -91,13 +91,17 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 var VS=`#version 300 es
 precision highp float;
 layout(location=0) in vec4 aSeed;
-uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift;
+uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom;
 uniform vec2 uField;
 out vec3 vCol;
 out float vA;
 const float PI=3.14159265;
 const float TAU=6.2831853;
-// a system like ours: four small rocky worlds, then giants beyond the ice line
+const int HEART=5;
+const int GIANT=10;
+// the galaxy in the protocluster that the camera flies into
+const vec3 FC=vec3(.55,-.32,.35);
+// a planetary system like ours: four small rocky worlds, then giants beyond the frost line
 const float PR[8]=float[8](.3,.42,.56,.72,1.2,1.62,2.05,2.42);
 const float PS[8]=float[8](.008,.013,.014,.010,.05,.042,.028,.027);
 const vec3 PC[8]=vec3[8](vec3(.6,.55,.5),vec3(.95,.8,.5),vec3(.3,.55,1.),vec3(.9,.4,.25),vec3(.9,.7,.5),vec3(.95,.85,.6),vec3(.6,.9,.95),vec3(.3,.45,1.));
@@ -114,23 +118,66 @@ mat2 rot(float a){float c=cos(a),s_=sin(a);return mat2(c,-s_,s_,c);}
 float ease(float x){x=clamp(x,0.,1.);return x*x*x*(x*(x*6.-15.)+10.);}
 vec3 nodePos(vec3 c){return (c+.5+(hash33(c)-.5)*.85)*.9;}
 
-void galaxy(out vec3 P,out vec3 C,out float S,out float A){
-  // a settled spiral: two arms, a quiet bulge
-  float bulge=step(r2.y,.16);
-  float rr=.05+2.5*pow(s.x,1.7);
-  float arm=floor(s.y*2.);
-  float sp=fract(s.y*2.)-.5; sp=sp*abs(sp)*4.;
-  float th=arm*PI+2.6*log(rr+.2)+sp*.9+uTime*.05;
-  P=vec3(rr*cos(th),rr*sin(th),g.z*.04);
-  P=mix(P,g*vec3(.22,.22,.16),bulge);
-  C=mix(vec3(.45,.6,1.),vec3(1.,.35,.6),step(.88,r3.z));
-  C=mix(C,vec3(1.,.8,.5),smoothstep(.9,.15,rr));
-  C=mix(C,vec3(1.,.72,.38),bulge);
-  S=.021; A=mix(.6,.5,bulge);
-  P.yz=rot(1.0)*P.yz;
+void energy(out vec3 P,out vec3 C,out float S,out float A){
+  // primordial energy: fills the view, no centre
+  P=(s*2.-1.)*vec3(uField,2.2);
+  P+=flow(P*1.1,uTime*.6)*.22;
+  float n0=.5+.5*sin(P.x*1.3+P.y*1.9+P.z*1.1+uTime*.4);
+  C=mix(vec3(1.,.42,.1),vec3(1.,.14,.55),n0)+vec3(.7,.62,.5)*r2.x*r2.x;
+  S=.03+.05*r2.y; A=.5;
 }
 
-void young(out vec3 P,out vec3 C,out float S,out float A){
+void web(out vec3 P,out vec3 C,out float S,out float A){
+  // cosmic web: jittered nodes joined by curved filaments
+  vec3 c=floor((s*2.-1.)*3.);
+  vec3 na=nodePos(c);
+  float di=floor(r2.x*6.);
+  vec3 d=di<1.?vec3(1,0,0):di<2.?vec3(-1,0,0):di<3.?vec3(0,1,0):di<4.?vec3(0,-1,0):di<5.?vec3(0,0,1):vec3(0,0,-1);
+  vec3 cb=c+d;
+  vec3 nb=nodePos(cb);
+  vec3 em=(c+cb)*.5;
+  float isFil=step(.32,hash13(em*3.7+1.3))*step(.18,r2.y);
+  float u=r2.z;
+  vec3 curve=(hash33(em*5.1)-.5)*.55*sin(PI*u);
+  vec3 Pf=mix(na,nb,u)+curve+g*.03*(1.+2.5*r3.x*r3.x);
+  vec3 Pn=na+g*(.07+.3*r3.y*r3.y*r3.y);
+  P=mix(Pn,Pf,isFil);
+  C=mix(vec3(1.,.7,.34),mix(vec3(.2,.3,1.),vec3(.25,.7,1.),r3.z),isFil);
+  S=mix(.03,.024,isFil); A=mix(.5,.95,isFil);
+  // the node we will fly into: a dense, bright knot
+  float home=(1.-isFil)*step(dot(abs(c),vec3(1.)),.5);
+  P=mix(P,na+g*.09,home);
+  C=mix(C,vec3(1.,.92,.8)*1.3,home);
+  A=mix(A,.9,home);
+  P.xz=rot(uTime*.04)*P.xz;
+}
+
+void protocluster(out vec3 P,out vec3 C,out float S,out float A){
+  // a cluster still assembling: dozens of young galaxies with empty space between them
+  float kind=r3.z;
+  if(kind<.06){
+    P=g*vec3(1.3,1.,1.); C=vec3(.35,.3,.6)*.2; S=.05; A=.25;
+  }else if(kind<.13){
+    // faint galaxies far behind the cluster
+    P=(s*2.-1.)*vec3(3.4,2.1,1.5); C=mix(vec3(.9,.7,.5),vec3(.6,.7,1.),r2.x)*.55; S=.012; A=.5;
+  }else{
+    float u=r2.z;
+    float id=u<.1?0.:u<.22?1.:2.+floor(r2.x*60.);
+    vec3 h=hash33(vec3(id,11.,4.));
+    vec3 c=id<.5?FC:id<1.5?vec3(-.3,.12,-.2):normalize(h-.5+1e-4)*2.4*pow(hash13(vec3(id,3.,3.)),.6);
+    float sz=id<.5?.12:id<1.5?.2:.06+.1*h.x;
+    vec3 q=g;
+    q.z*=h.y<.5?.3:.85;
+    q.xy=rot(h.z*TAU)*q.xy; q.yz=rot(h.x*3.)*q.yz;
+    P=c+q*sz;
+    C=mix(vec3(.55,.7,1.15),vec3(1.,.75,.45),step(.55,h.y))*(.6+.5*r3.x);
+    if(id<.5)C=mix(vec3(.6,.75,1.3),vec3(1.2,.5,.8),r3.x);
+    if(id>.5&&id<1.5)C=vec3(1.,.82,.6);
+    S=.024; A=id<.5?.22:id<1.5?.14:.2;
+  }
+}
+
+void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   // a young, gas-rich galaxy mid-merger: giant star-forming clumps, tidal tails,
   // a blinding core fed by infalling gas, and twin jets
   float kind=r3.z;
@@ -171,215 +218,259 @@ void young(out vec3 P,out vec3 C,out float S,out float A){
   P.yz=rot(1.0)*P.yz;
 }
 
-void shape(int k,out vec3 P,out vec3 C,out float S,out float A){
-  if(k==0){
-    // primordial energy: fills the view, no centre
-    P=(s*2.-1.)*vec3(uField,2.2);
-    P+=flow(P*1.1,uTime*.6)*.22;
-    float n0=.5+.5*sin(P.x*1.3+P.y*1.9+P.z*1.1+uTime*.4);
-    C=mix(vec3(1.,.42,.1),vec3(1.,.14,.55),n0)+vec3(.7,.62,.5)*r2.x*r2.x;
-    S=.03+.05*r2.y; A=.5;
-  }else if(k==1){
-    // cosmic web: jittered nodes joined by curved filaments
-    vec3 c=floor((s*2.-1.)*3.);
-    vec3 na=nodePos(c);
-    float di=floor(r2.x*6.);
-    vec3 d=di<1.?vec3(1,0,0):di<2.?vec3(-1,0,0):di<3.?vec3(0,1,0):di<4.?vec3(0,-1,0):di<5.?vec3(0,0,1):vec3(0,0,-1);
-    vec3 cb=c+d;
-    vec3 nb=nodePos(cb);
-    vec3 em=(c+cb)*.5;
-    float isFil=step(.32,hash13(em*3.7+1.3))*step(.18,r2.y);
-    float u=r2.z;
-    vec3 curve=(hash33(em*5.1)-.5)*.55*sin(PI*u);
-    vec3 Pf=mix(na,nb,u)+curve+g*.03*(1.+2.5*r3.x*r3.x);
-    vec3 Pn=na+g*(.07+.3*r3.y*r3.y*r3.y);
-    P=mix(Pn,Pf,isFil);
-    P.xz=rot(uTime*.04)*P.xz;
-    C=mix(vec3(1.,.7,.34),mix(vec3(.2,.3,1.),vec3(.25,.7,1.),r3.z),isFil);
-    S=mix(.03,.024,isFil); A=mix(.5,.95,isFil);
-  }else if(k==2){
-    young(P,C,S,A);
-  }else if(k==3){
-    galaxy(P,C,S,A);
-  }else if(k==4){
-    // the dark heart: a supermassive black hole, its ring of light, its disc, and stars whipping round it
-    float kind=r3.z;
-    float a=s.y*TAU;
-    if(kind<.16){
-      float r=.62+abs(g.x)*.025;
-      float a2=a+uTime*.6;
-      P=vec3(r*cos(a2),r*sin(a2),0.);
-      C=vec3(1.,.84,.55)*(.5+.5*cos(a2-2.6));
-      S=.016; A=.8;
-    }else if(kind<.34){
-      float r=.66+.32*s.x*s.x;
-      float a2=a+uTime*.3;
-      P=vec3(r*cos(a2),r*sin(a2),0.);
-      C=vec3(1.,.5,.18)*(.3+.3*cos(a2-2.6))*(1.-smoothstep(.66,.98,r));
-      S=.022; A=.5;
-    }else if(kind<.94){
-      float r=.95+1.9*pow(s.x,1.6);
-      float th=a+uTime*1.6/pow(r,1.5);
-      P=vec3(r*cos(th),r*sin(th),g.z*.02*r);
-      P.yz=rot(1.3)*P.yz;
-      C=mix(vec3(1.,.9,.7),vec3(.9,.22,.07),smoothstep(.95,2.4,r));
-      C*=(.3+.7*(.5-.5*cos(th)))*(.7+.3*sin(r*18.+r2.x));
-      S=.02; A=.55;
-    }else{
-      float id=floor(s.x*14.);
-      vec3 h=hash33(vec3(id,4.,8.));
-      float sa=1.2+2.2*h.x, e=.3+.5*h.y;
-      float M=h.z*TAU+uTime*2.2/pow(sa,1.5);
-      float r=sa*(1.-e*e)/(1.+e*cos(M));
-      float om=hash13(vec3(id,9.,1.))*TAU;
-      P=vec3(r*cos(M+om),r*sin(M+om),0.);
-      P.yz=rot(hash13(vec3(id,5.,6.))*PI)*P.yz;
-      P+=g*.006;
-      C=mix(vec3(.6,.75,1.),vec3(1.,.8,.55),h.y)*.8; S=.016; A=.45;
-    }
-  }else if(k==5){
-    // stellar nursery: a cold cloud lit by young stars, with dense knots about to collapse
-    float kind=r3.z;
-    P=(s*2.-1.)*vec3(2.7,1.6,1.1);
-    P+=flow(P*1.3,uTime*.03)*.34;
-    P+=flow(P*2.9+7.,uTime*.05)*.14;
-    float n=sin(P.x*2.1+sin(P.y*3.)*1.3)+sin(P.y*1.7+P.z*2.);
-    float lit=smoothstep(-.5,.8,n);
-    C=mix(vec3(1.4,.32,.45),vec3(.2,.8,.75),smoothstep(.5,1.5,n+r2.x*.6))*(.14+.9*lit);
-    S=.034; A=.4;
-    if(kind<.12){
-      float id=floor(r2.x*5.);
-      vec3 kc=id<1.?vec3(.6,-.2,0.):(hash33(vec3(id,3.,1.))*2.-1.)*vec3(2.,1.1,.6);
-      P=kc+g*(.05+.12*r3.x*r3.x);
-      C=vec3(.9,.45,.2)*(.4+.5*r3.y); S=.022; A=.5;
-    }else if(kind<.16){
-      float id=floor(r2.x*40.);
-      P=(hash33(vec3(id,8.,2.))*2.-1.)*vec3(2.3,1.3,.8)+g*.006;
-      C=vec3(.7,.82,1.); S=.02; A=.5;
-    }
-  }else if(k==6){
-    // protostar: an infalling envelope, a small disc, a core not yet fusing, and polar jets
-    float kind=r3.z;
-    if(kind<.08){
-      P=g*.07; C=vec3(1.,.68,.38); S=.03; A=.8;
-    }else if(kind<.33){
-      float r=.14+.75*sqrt(s.x);
-      float th=s.y*TAU+uTime*.5/(pow(r,1.5)+.1);
-      P=vec3(r*cos(th),r*sin(th),g.z*.05*(.3+r));
-      C=mix(vec3(1.,.6,.25),vec3(.7,.25,.1),r); S=.02; A=.5;
-    }else if(kind<.78){
-      float ph=fract(s.x+uTime*.03);
-      float r=mix(2.3,.35,ph*ph);
-      vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
-      d2.z*=mix(.9,.3,ph);
-      P=d2*r;
-      P.xy=rot(uTime*.25/(r+.3)+ph*2.)*P.xy;
-      C=vec3(.8,.34,.18)*(.6+.9*ph)*smoothstep(0.,.1,ph)*(1.-smoothstep(.9,1.,ph));
-      S=.03; A=.4;
-    }else{
-      float side=r3.y<.5?1.:-1.;
-      float h=fract(r2.z+uTime*.12);
-      float wj=.012+.05*h+.12*smoothstep(.85,1.,h);
-      P=vec3(g.x*wj,g.y*wj,side*(.1+2.3*h));
-      float knot=pow(.5+.5*sin(h*22.-uTime*1.5),4.);
-      C=mix(vec3(.5,.85,1.),vec3(1.,.45,.6),knot)*(.3+.9*knot)*(1.-.4*h);
-      S=.018; A=.7;
-    }
-    P.yz=rot(1.12)*P.yz;
-  }else if(k==7){
-    // the star ignites; its dusty disc shows rings and gaps
-    float rr=.12+2.3*sqrt(s.x);
-    rr+=.07*sin(rr*11.);
-    float th=s.y*TAU+uTime*.35/(pow(rr,1.5)+.15);
-    P=vec3(rr*cos(th),rr*sin(th),(s.z-.5)*.05*(1.+rr*1.5));
-    float core=step(r2.y,.09);
-    P=mix(P,g*.13,core);
-    C=mix(vec3(1.,.74,.3),vec3(.85,.4,.18),smoothstep(.3,1.6,rr));
-    C=mix(C,mix(vec3(.3,.7,.45),vec3(.8,.2,.12),r3.x),smoothstep(1.2,2.4,rr)*r3.z);
-    C=mix(C,vec3(1.,.93,.75),core);
-    S=mix(.02,.035,core); A=mix(.5,.85,core);
-    P.yz=rot(1.12)*P.yz;
-  }else if(k==8){
-    // worlds form: rocky planets close in, giants farther out, belts of leftovers
-    int ip=int(min(floor(s.x*8.),7.));
-    float pr=PR[ip];
-    float hp=hash13(vec3(float(ip),7.,3.));
-    float om=.18/(pow(pr,1.5)+.05);
-    float a=s.y*TAU+uTime*om;
-    float kind=r2.x;
-    S=.014; A=.6;
-    if(kind<.07){
-      float ph=hp*TAU+uTime*om;
-      P=vec3(pr*cos(ph),pr*sin(ph),0.)+g*PS[ip];
-      C=PC[ip]*(.6+.5*r3.x); S=.018;
-      A=max(.02,.12*pow(PS[ip]/.05,2.));
-    }else if(kind<.42){
-      P=vec3(pr*cos(a),pr*sin(a),0.)+g*.004;
-      C=vec3(.5,.5,.58)*.16;
-    }else if(kind<.56){
-      float r=.94+g.x*.07;
-      P=vec3(r*cos(a),r*sin(a),g.z*.02); C=vec3(.6,.5,.4)*.4; S=.012;
-    }else if(kind<.74){
-      float r=2.8+g.x*.14;
-      P=vec3(r*cos(a),r*sin(a),g.z*.05); C=vec3(.5,.6,.75)*.3; S=.012;
-    }else{
-      float r=.2+2.7*sqrt(r3.y);
-      P=vec3(r*cos(a),r*sin(a),g.z*.03); C=vec3(.5,.4,.3)*.07;
-    }
-    float core=step(r2.y,.07);
-    P=mix(P,g*.09,core);
-    C=mix(C,vec3(1.,.95,.8),core);
-    S=mix(S,.035,core); A=mix(A,.85,core);
-    P.yz=rot(1.12)*P.yz;
-  }else if(k==9){
-    // red giant: the swollen star pushes its outer layers off as shells
-    vec3 dir=normalize(g+vec3(1e-4));
-    float giant=step(r2.y,.4);
-    float ph=fract(floor(r3.x*4.)/4.+uTime*.03);
-    float R=.85+1.7*ph;
-    float rg=.8*pow(r3.y,.33)*(1.+.04*sin(uTime*.9));
-    vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
-    P=mix(dir*(R+g.x*.03),d2*rg,giant);
-    vec3 shell=vec3(1.,.45,.2)*(1.-ph)*(1.-ph)+vec3(.15,.5,.6)*ph*(1.-ph)*2.;
-    C=mix(shell,mix(vec3(1.,.3,.1),vec3(1.,.65,.3),r3.z),giant);
-    S=mix(.02,.03,giant); A=mix(.55,.2,giant);
+void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
+  // a barred spiral like ours: two major arms leave the ends of the bar, two minor arms lie between,
+  // dust lanes run along the inner edges, pink star-forming regions dot the arms
+  float kind=r3.z;
+  float pat=uTime*.025;
+  float barA=.5+pat;
+  float K=3.3;     // log-spiral winding, a pitch of about 17 degrees
+  float R0=.55;    // the arms start at the ends of the bar
+  S=.02; A=.5;
+  if(kind<.13){
+    vec3 q=g*vec3(.42,.15,.13);
+    q.xy=rot(barA)*q.xy;
+    P=q; C=mix(vec3(1.,.74,.45),vec3(1.,.9,.72),r2.x); A=.55;
+  }else if(kind<.40){
+    float r=min(2.8,.15-.7*log(1.-.96*r2.x));
+    float th=s.y*TAU+pat;
+    P=vec3(r*cos(th),r*sin(th),g.z*.035);
+    C=vec3(1.,.86,.66)*.55;
+    float ph=mod(th-barA-K*log(max(r,R0)/R0),PI);
+    float lane=smoothstep(.02,.1,ph)*(1.-smoothstep(.28,.42,ph))*smoothstep(R0,R0+.2,r);
+    A=.45*(1.-.85*lane);
   }else{
-    // nebula eye: a dying star's shed shell, read as an eye
-    float a=s.y*TAU;
-    float kind=r3.z;
-    float Nf=220.;
-    float fi=floor(s.y*Nf);
-    float fr=hash13(vec3(fi,1.,2.));
-    float lump=.13*sin(a*2.+.6)+.08*sin(a*5.+2.)+.05*sin(a*9.+uTime*.05);
-    float r; S=.03; A=.42;
-    if(kind<.02){
-      P=g*.02; C=vec3(.85,.95,1.); S=.034; A=.9;
-    }else if(kind<.14){
-      r=.72*sqrt(s.x);
-      P=vec3(r*cos(a),r*sin(a),g.z*.1);
-      C=vec3(.04,.16,.42)*(.35+.5*r2.x);
-    }else if(kind<.50){
-      float r0=.66+.2*fr;
-      r=r0+.75*pow(s.x,1.8);
-      float ak=(fi+.5)/Nf*TAU+(r3.x-.5)*(.012+.05*(r-r0));
-      P=vec3(r*cos(ak),r*sin(ak),g.z*.06);
-      C=mix(vec3(.25,1.,.9),vec3(.1,.4,.85),smoothstep(0.,.7,r-r0))*(.45+.8*fr);
-      S=.022; A=.5;
-    }else if(kind<.90){
-      r=1.55+lump+g.x*.3;
-      P=vec3(r*cos(a),r*sin(a),g.z*.12);
-      C=mix(vec3(1.,.6,.16),vec3(.95,.18,.1),smoothstep(1.45,2.1,r));
-      C=mix(vec3(.55,.85,.5),C,smoothstep(1.05,1.45,r));
-      C*=.55+.6*r2.x;
-    }else{
-      r=2.+lump+1.3*pow(s.x,1.5);
-      P=vec3(r*cos(a),r*sin(a),g.z*.2);
-      C=vec3(.7,.12,.1)*(1.-smoothstep(2.4,3.4,r))*.7;
-    }
-    P+=flow(P*2.2+fr,uTime*.15)*.035;
-    P.x*=1.2;
-    P.xy=rot(-.18)*P.xy;
+    float pick=r2.y;
+    float a0=pick<.34?0.:pick<.68?PI:pick<.84?PI*.5:PI*1.5;
+    float major=step(pick,.68);
+    float rs=mix(.9,R0,major);
+    float knot=step(r3.x,.1);
+    float tr=pow(s.x,.85);
+    if(knot>.5)tr=pow(hash13(vec3(floor(s.x*30.),a0,2.)),.85);
+    float r=rs+(2.75-rs)*tr;
+    float th=a0+barA+K*log(r/R0);
+    th-=abs(g.x)*(.09+.03*r)/r*mix(1.,.4,knot);
+    float rr=r+g.y*.05;
+    P=vec3(rr*cos(th),rr*sin(th),g.z*.025);
+    C=mix(vec3(.55,.7,1.15),vec3(.85,.9,1.),r2.x)*(.55+.5*r3.y)*mix(.7,1.,major);
+    if(knot>.5){C=vec3(1.25,.38,.6);S=.018;A=.6;}
   }
+  P.yz=rot(1.05)*P.yz;
+}
+
+void heart(out vec3 P,out vec3 C,out float S,out float A){
+  // a supermassive black hole: its ring of light, its disc, and stars whipping round it
+  float kind=r3.z;
+  float a=s.y*TAU;
+  if(kind<.16){
+    float r=.62+abs(g.x)*.025;
+    float a2=a+uTime*.6;
+    P=vec3(r*cos(a2),r*sin(a2),0.);
+    C=vec3(1.,.84,.55)*(.5+.5*cos(a2-2.6));
+    S=.016; A=.8;
+  }else if(kind<.34){
+    float r=.66+.32*s.x*s.x;
+    float a2=a+uTime*.3;
+    P=vec3(r*cos(a2),r*sin(a2),0.);
+    C=vec3(1.,.5,.18)*(.3+.3*cos(a2-2.6))*(1.-smoothstep(.66,.98,r));
+    S=.022; A=.5;
+  }else if(kind<.94){
+    float r=.95+1.9*pow(s.x,1.6);
+    float th=a+uTime*1.6/pow(r,1.5);
+    P=vec3(r*cos(th),r*sin(th),g.z*.02*r);
+    P.yz=rot(1.3)*P.yz;
+    C=mix(vec3(1.,.9,.7),vec3(.9,.22,.07),smoothstep(.95,2.4,r));
+    C*=(.3+.7*(.5-.5*cos(th)))*(.7+.3*sin(r*18.+r2.x));
+    S=.02; A=.55;
+  }else{
+    float id=floor(s.x*14.);
+    vec3 h=hash33(vec3(id,4.,8.));
+    float sa=1.2+2.2*h.x, e=.3+.5*h.y;
+    float M=h.z*TAU+uTime*2.2/pow(sa,1.5);
+    float r=sa*(1.-e*e)/(1.+e*cos(M));
+    float om=hash13(vec3(id,9.,1.))*TAU;
+    P=vec3(r*cos(M+om),r*sin(M+om),0.);
+    P.yz=rot(hash13(vec3(id,5.,6.))*PI)*P.yz;
+    P+=g*.006;
+    C=mix(vec3(.6,.75,1.),vec3(1.,.8,.55),h.y)*.8; S=.016; A=.45;
+  }
+}
+
+void nursery(out vec3 P,out vec3 C,out float S,out float A){
+  // a cold cloud lit by young stars, with dense knots about to collapse
+  float kind=r3.z;
+  P=(s*2.-1.)*vec3(2.7,1.6,1.1);
+  P+=flow(P*1.3,uTime*.03)*.34;
+  P+=flow(P*2.9+7.,uTime*.05)*.14;
+  float n=sin(P.x*2.1+sin(P.y*3.)*1.3)+sin(P.y*1.7+P.z*2.);
+  float lit=smoothstep(-.5,.8,n);
+  C=mix(vec3(1.4,.32,.45),vec3(.2,.8,.75),smoothstep(.5,1.5,n+r2.x*.6))*(.14+.9*lit);
+  S=.034; A=.4;
+  if(kind<.12){
+    float id=floor(r2.x*5.);
+    vec3 kc=id<1.?vec3(.6,-.2,0.):(hash33(vec3(id,3.,1.))*2.-1.)*vec3(2.,1.1,.6);
+    P=kc+g*(.05+.12*r3.x*r3.x);
+    C=vec3(.9,.45,.2)*(.4+.5*r3.y); S=.022; A=.5;
+  }else if(kind<.16){
+    float id=floor(r2.x*40.);
+    P=(hash33(vec3(id,8.,2.))*2.-1.)*vec3(2.3,1.3,.8)+g*.006;
+    C=vec3(.7,.82,1.); S=.02; A=.5;
+  }
+}
+
+void protostar(out vec3 P,out vec3 C,out float S,out float A){
+  // an infalling envelope, a small disc, a core not yet fusing, and polar jets
+  float kind=r3.z;
+  if(kind<.08){
+    P=g*.07; C=vec3(1.,.68,.38); S=.03; A=.8;
+  }else if(kind<.33){
+    float r=.14+.75*sqrt(s.x);
+    float th=s.y*TAU+uTime*.5/(pow(r,1.5)+.1);
+    P=vec3(r*cos(th),r*sin(th),g.z*.05*(.3+r));
+    C=mix(vec3(1.,.6,.25),vec3(.7,.25,.1),r); S=.02; A=.5;
+  }else if(kind<.78){
+    float ph=fract(s.x+uTime*.03);
+    float r=mix(2.3,.35,ph*ph);
+    vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+    d2.z*=mix(.9,.3,ph);
+    P=d2*r;
+    P.xy=rot(uTime*.25/(r+.3)+ph*2.)*P.xy;
+    C=vec3(.8,.34,.18)*(.6+.9*ph)*smoothstep(0.,.1,ph)*(1.-smoothstep(.9,1.,ph));
+    S=.03; A=.4;
+  }else{
+    float side=r3.y<.5?1.:-1.;
+    float h=fract(r2.z+uTime*.12);
+    float wj=.012+.05*h+.12*smoothstep(.85,1.,h);
+    P=vec3(g.x*wj,g.y*wj,side*(.1+2.3*h));
+    float knot=pow(.5+.5*sin(h*22.-uTime*1.5),4.);
+    C=mix(vec3(.5,.85,1.),vec3(1.,.45,.6),knot)*(.3+.9*knot)*(1.-.4*h);
+    S=.018; A=.7;
+  }
+  P.yz=rot(1.12)*P.yz;
+}
+
+void youngStar(out vec3 P,out vec3 C,out float S,out float A){
+  // the star ignites; its dusty disc shows rings and gaps
+  float rr=.12+2.3*sqrt(s.x);
+  rr+=.07*sin(rr*11.);
+  float th=s.y*TAU+uTime*.35/(pow(rr,1.5)+.15);
+  P=vec3(rr*cos(th),rr*sin(th),(s.z-.5)*.05*(1.+rr*1.5));
+  float core=step(r2.y,.09);
+  P=mix(P,g*.13,core);
+  C=mix(vec3(1.,.74,.3),vec3(.85,.4,.18),smoothstep(.3,1.6,rr));
+  C=mix(C,mix(vec3(.3,.7,.45),vec3(.8,.2,.12),r3.x),smoothstep(1.2,2.4,rr)*r3.z);
+  C=mix(C,vec3(1.,.93,.75),core);
+  S=mix(.02,.035,core); A=mix(.5,.85,core);
+  P.yz=rot(1.12)*P.yz;
+}
+
+void worlds(out vec3 P,out vec3 C,out float S,out float A){
+  // rocky planets close in, giants farther out, belts of leftovers
+  int ip=int(min(floor(s.x*8.),7.));
+  float pr=PR[ip];
+  float hp=hash13(vec3(float(ip),7.,3.));
+  float om=.18/(pow(pr,1.5)+.05);
+  float a=s.y*TAU+uTime*om;
+  float kind=r2.x;
+  S=.014; A=.6;
+  if(kind<.07){
+    float ph=hp*TAU+uTime*om;
+    P=vec3(pr*cos(ph),pr*sin(ph),0.)+g*PS[ip];
+    C=PC[ip]*(.6+.5*r3.x); S=.018;
+    A=max(.02,.12*pow(PS[ip]/.05,2.));
+  }else if(kind<.42){
+    P=vec3(pr*cos(a),pr*sin(a),0.)+g*.004;
+    C=vec3(.5,.5,.58)*.16;
+  }else if(kind<.56){
+    float r=.94+g.x*.07;
+    P=vec3(r*cos(a),r*sin(a),g.z*.02); C=vec3(.6,.5,.4)*.4; S=.012;
+  }else if(kind<.74){
+    float r=2.8+g.x*.14;
+    P=vec3(r*cos(a),r*sin(a),g.z*.05); C=vec3(.5,.6,.75)*.3; S=.012;
+  }else{
+    float r=.2+2.7*sqrt(r3.y);
+    P=vec3(r*cos(a),r*sin(a),g.z*.03); C=vec3(.5,.4,.3)*.07;
+  }
+  float core=step(r2.y,.07);
+  P=mix(P,g*.09,core);
+  C=mix(C,vec3(1.,.95,.8),core);
+  S=mix(S,.035,core); A=mix(A,.85,core);
+  P.yz=rot(1.12)*P.yz;
+}
+
+void redGiant(out vec3 P,out vec3 C,out float S,out float A){
+  // the swollen star pushes its outer layers off as shells
+  vec3 dir=normalize(g+vec3(1e-4));
+  float giant=step(r2.y,.4);
+  float ph=fract(floor(r3.x*4.)/4.+uTime*.03);
+  float R=.85+1.7*ph;
+  float rg=.8*pow(r3.y,.33)*(1.+.04*sin(uTime*.9));
+  vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+  P=mix(dir*(R+g.x*.03),d2*rg,giant);
+  vec3 shell=vec3(1.,.45,.2)*(1.-ph)*(1.-ph)+vec3(.15,.5,.6)*ph*(1.-ph)*2.;
+  C=mix(shell,mix(vec3(1.,.3,.1),vec3(1.,.65,.3),r3.z),giant);
+  S=mix(.02,.03,giant); A=mix(.55,.2,giant);
+}
+
+void nebulaEye(out vec3 P,out vec3 C,out float S,out float A){
+  // a dying star's shed shell, read as an eye
+  float a=s.y*TAU;
+  float kind=r3.z;
+  float Nf=220.;
+  float fi=floor(s.y*Nf);
+  float fr=hash13(vec3(fi,1.,2.));
+  float lump=.13*sin(a*2.+.6)+.08*sin(a*5.+2.)+.05*sin(a*9.+uTime*.05);
+  float r; S=.03; A=.42;
+  if(kind<.02){
+    P=g*.02; C=vec3(.85,.95,1.); S=.034; A=.9;
+  }else if(kind<.14){
+    r=.72*sqrt(s.x);
+    P=vec3(r*cos(a),r*sin(a),g.z*.1);
+    C=vec3(.04,.16,.42)*(.35+.5*r2.x);
+  }else if(kind<.50){
+    float r0=.66+.2*fr;
+    r=r0+.75*pow(s.x,1.8);
+    float ak=(fi+.5)/Nf*TAU+(r3.x-.5)*(.012+.05*(r-r0));
+    P=vec3(r*cos(ak),r*sin(ak),g.z*.06);
+    C=mix(vec3(.25,1.,.9),vec3(.1,.4,.85),smoothstep(0.,.7,r-r0))*(.45+.8*fr);
+    S=.022; A=.5;
+  }else if(kind<.90){
+    r=1.55+lump+g.x*.3;
+    P=vec3(r*cos(a),r*sin(a),g.z*.12);
+    C=mix(vec3(1.,.6,.16),vec3(.95,.18,.1),smoothstep(1.45,2.1,r));
+    C=mix(vec3(.55,.85,.5),C,smoothstep(1.05,1.45,r));
+    C*=.55+.6*r2.x;
+  }else{
+    r=2.+lump+1.3*pow(s.x,1.5);
+    P=vec3(r*cos(a),r*sin(a),g.z*.2);
+    C=vec3(.7,.12,.1)*(1.-smoothstep(2.4,3.4,r))*.7;
+  }
+  P+=flow(P*2.2+fr,uTime*.15)*.035;
+  P.x*=1.2;
+  P.xy=rot(-.18)*P.xy;
+}
+
+void shape(int k,out vec3 P,out vec3 C,out float S,out float A){
+  if(k==0)energy(P,C,S,A);
+  else if(k==1)web(P,C,S,A);
+  else if(k==2)protocluster(P,C,S,A);
+  else if(k==3)youngGalaxy(P,C,S,A);
+  else if(k==4)milkyWay(P,C,S,A);
+  else if(k==5)heart(P,C,S,A);
+  else if(k==6)nursery(P,C,S,A);
+  else if(k==7)protostar(P,C,S,A);
+  else if(k==8)youngStar(P,C,S,A);
+  else if(k==9)worlds(P,C,S,A);
+  else if(k==10)redGiant(P,C,S,A);
+  else nebulaEye(P,C,S,A);
+}
+
+// where each zoom-in aims, in the coordinates of the scene being left
+vec3 focus(int k){
+  if(k==1){vec3 f=nodePos(vec3(0.));f.xz=rot(uTime*.04)*f.xz;return f;}
+  if(k==2)return FC;
+  if(k==6)return vec3(.6,-.2,0.);
+  return vec3(0.);
 }
 
 void main(){
@@ -390,55 +481,54 @@ void main(){
 
   float kf=min(floor(uT),__LAST__.);
   int k=int(kf);
-  float f=ease((uT-kf)*1.5-.5*w);
-  vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
-  shape(k,Pa,Ca,Sa,Aa);
-  shape(k+1,Pb,Cb,Sb,Ab);
-
-  // changes of scale are real zooms: both shapes share one exponential camera move
   float z=clamp(uT-kf,0.,1.);
   float zs=z*z*(3.-2.*z);
-  float L=2.6;
-  float zoomed=0.;
-  // the black hole's shadow: centre, radius and how present it is
+  vec3 P,C; float S,A;
   float hw=0.,hr=.6; vec3 hc=vec3(0.);
-  if(k==3){hw=smoothstep(.4,.9,z);hr=.6*exp(L*(zs-1.));}
-  else if(k==4){hw=1.-smoothstep(.15,.7,z);hc=vec3(-2.4,1.2,0.)*zs;hr=.6*exp(-L*zs);}
-  if(k==1||k==3||k==5){
-    vec3 foc=vec3(0.);
-    if(k==1){foc=nodePos(vec3(0.));foc.xz=rot(uTime*.04)*foc.xz;}
-    if(k==5){foc=vec3(.6,-.2,0.);}
-    Pa=(Pa-foc*smoothstep(0.,.5,z))*exp(L*zs);
-    Pb*=exp(L*(zs-1.));
-    zoomed=1.;
-  }else if(k==4){
-    Pa=Pa*exp(-L*zs)+vec3(-2.4,1.2,0.)*zs;
-    Pb*=exp(L*(1.-zs));
-    zoomed=1.;
-  }else if(k==9){
-    // the giant shrinks to the white dwarf while its shells keep expanding
-    Pa*=exp(-1.8*zs);
-    zoomed=1.;
+
+  if(uZoom!=0.){
+    // a true zoom: pass 0 draws the scene we leave, pass 1 the scene we arrive at
+    float L=abs(uZoom);
+    bool first=uPass<.5;
+    shape(first?k:k+1,P,C,S,A);
+    if(uZoom>0.){
+      // fly towards the focus: the old scene streams past, the new one grows out of that point
+      vec3 foc=focus(k);
+      vec3 aim=foc*smoothstep(0.,.45,zs);
+      float grow=exp(L*zs);
+      if(first){P=(P-aim)*grow;A*=1.-smoothstep(.45,.9,zs);}
+      else{P=(foc-aim)*grow+P*exp(L*(zs-1.));A*=smoothstep(.06,.5,zs);}
+      if(k==HEART-1){hc=(foc-aim)*grow;hr=.6*exp(L*(zs-1.));hw=smoothstep(.06,.5,zs);}
+    }else{
+      // pull back: the old scene shrinks away, the new one arrives from beyond the camera
+      vec3 off=vec3(-2.4,1.2,0.)*zs;
+      if(first){P=P*exp(-L*zs)+off;A*=1.-smoothstep(.5,.95,zs);}
+      else{P=P*exp(L*(1.-zs));A*=smoothstep(.05,.5,zs);}
+      if(k==HEART){hc=off;hr=.6*exp(-L*zs);hw=1.-smoothstep(.5,.95,zs);}
+    }
+  }else{
+    // a morph: each particle travels from its place in one shape to its place in the next
+    vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
+    shape(k,Pa,Ca,Sa,Aa);
+    shape(k+1,Pb,Cb,Sb,Ab);
+    if(k==GIANT)Pa*=exp(-1.8*zs);   // the giant shrinks to a white dwarf while its shells keep expanding
+    float f=ease(z*1.5-.5*w);
+    P=mix(Pa,Pb,f); C=mix(Ca,Cb,f); S=mix(Sa,Sb,f); A=mix(Aa,Ab,f);
+    float sw=sin(PI*f);
+    P+=flow(P*.9+w*3.,uTime*.5)*.16*sw;
+    P.xy=rot(sw*(w-.35)*.9)*P.xy;
+    C+=vec3(.25,.12,.3)*sw*r2.x;
+    if(k==HEART)hw=1.-f;
   }
-
-  vec3 P=mix(Pa,Pb,f);
-  vec3 C=mix(Ca,Cb,f);
-  float S=mix(Sa,Sb,f);
-  float A=mix(Aa,Ab,f);
-
-  // the body swirls while it changes shape; less so during a zoom
-  float sw=sin(PI*f)*mix(1.,.3,zoomed);
-  P+=flow(P*.9+w*3.,uTime*.5)*.16*sw;
-  P.xy=rot(sw*(w-.35)*.9)*P.xy;
-  C+=vec3(.25,.12,.3)*sw*r2.x;
 
   float dist=uCam-P.z;
   float fo=2.1445;
-  if(dist<.06){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=1.;vCol=vec3(0.);vA=0.;return;}
+  if(dist<.06||A<=0.){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=1.;vCol=vec3(0.);vA=0.;return;}
   gl_Position=vec4(P.x*fo/uAspect,P.y*fo+uShift*dist,0.,dist);
   float ps=S*uPx*fo*.5/dist;
   float ref=uPx*.012;
   vA=A*uAlpha*min(1.,pow(ref/ps,1.3));
+  // the black hole's shadow hides anything behind it
   if(hw>0.&&P.z<hc.z-.005){
     float dh=uCam-hc.z;
     float sd=length(P.xy/dist-hc.xy/dh)*dh;
@@ -471,13 +561,13 @@ function sh(type,src){
 }
 var prog=gl.createProgram();
 // the shader draws SHAPE_COUNT shapes; the Atlas must have one event per shape (tests check this)
-var SHAPE_COUNT=11, LAST=SHAPE_COUNT-1;
+var SHAPE_COUNT=12, LAST=SHAPE_COUNT-1;
 gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS.replace("__LAST__",String(LAST-1))));
 gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
 gl.linkProgram(prog);
 if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(prog));document.getElementById("fail").style.display="flex";return;}
 gl.useProgram(prog);
-var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
 
 var COUNTS=[60000,120000,240000];
 var coarse=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches;
@@ -513,7 +603,7 @@ function resize(){
 window.addEventListener("resize",resize);resize();
 
 var TAN=0.4663; // tan(25 deg)
-var CAMS=[], shift=0; // filled from each event's camera cue
+var CAMS=[], TRANS=[], shift=0; // filled from each event's camera cue
 for(var c=0;c<SHAPE_COUNT;c++)CAMS.push({dist:5.6,fitW:2.6,fitH:1.8});
 var hudEl=document.querySelector('.hud');
 function cam(t){
@@ -574,6 +664,9 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
   var ticks=document.getElementById("ticks"),names={};
   EVENTS.forEach(function(e,k){
     if(e.camera)CAMS[k]=e.camera;
+    // how we leave this stage: 0 morph, +depth zoom in, -depth zoom out
+    var tr=e.transition;
+    TRANS[k]=!tr||tr.type==="morph"?0:tr.type==="zoom-in"?tr.depth:-tr.depth;
     var i=document.createElement("i");i.textContent=e.tick;ticks.appendChild(i);
     names[e.tick.toLowerCase()]=k;
   });
@@ -608,9 +701,14 @@ function frame(now){
   gl.uniform1f(U.uCam,D);
   gl.uniform1f(U.uAlpha,.42*Math.sqrt(120000/N));
   gl.uniform2f(U.uField,Math.max(1.5,2.8*aspect),2.8*(1+shift));
+  var kk=Math.min(LAST-1,Math.floor(T)),zm=TRANS[kk]||0;
+  gl.uniform1f(U.uZoom,zm);
+  gl.uniform1f(U.uPass,0);
   gl.drawArrays(gl.POINTS,0,N);
+  // a zoom draws the arriving scene too
+  if(zm!==0&&T-kk>0){gl.uniform1f(U.uPass,1);gl.drawArrays(gl.POINTS,0,N);}
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 0.9 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 1.0 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
