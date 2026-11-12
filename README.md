@@ -28,3 +28,7 @@ Every stage is labelled **Observed**, **Model-dependent** or **Artistic interpre
 1. Add a shape branch to `shape()` in the vertex shader and raise `SHAPE_COUNT`.
 2. Add an event to `data/events.json` with its sources.
 3. Run `npm test`.
+
+## Licence
+
+The code (`index.html`, `tests/`, `.github/`, `package.json`) is [MIT](LICENSE). The content (the Atlas text, docs, the name and media made from the experience) is all rights reserved; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
