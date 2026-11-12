@@ -67,7 +67,7 @@
     var comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -20; comp.ratio.value = 3; comp.attack.value = 0.05; comp.release.value = 0.4;
     var limit = ctx.createDynamicsCompressor();
-    limit.threshold.value = -4; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = 0.003; limit.release.value = 0.2;
+    limit.threshold.value = -3; limit.knee.value = 4; limit.ratio.value = 12; limit.attack.value = 0.006; limit.release.value = 0.25;
     var verb = ctx.createConvolver(); verb.buffer = impulse(2.8, 2.6);
     var mix = gain(1), wet = gain(0.4);
     chain(mix, hp, comp); chain(hp, verb, wet, comp); chain(comp, limit, master, dest);
@@ -242,16 +242,19 @@
     return {
       voices: voices,
       // turn the whole soundtrack up or down
-      setOn: function (on) { smooth(master.gain, on ? LEVEL : 0, ctx.currentTime, 0.4); },
+      // seconds: roughly how long the fade takes
+      setOn: function (on, seconds) { smooth(master.gain, on ? LEVEL : 0, ctx.currentTime, (seconds || 1.6) / 4); },
       // call every frame with the timeline position and how the current transition moves
       update: function (T, zoom) {
         var now = ctx.currentTime;
         if (now - lastUpdate < 0.05) return;
         lastUpdate = now;
+        var nextUp = Math.floor(T) + 1;
         voices.forEach(function (v, k) {
           var w = Math.max(0, 1 - Math.abs(T - k));
           w = Math.sin(w * Math.PI / 2);            // equal-power crossfade
-          if (w > 0.001) { wake(v); v.quietSince = 0; }
+          // the next stage's voice starts early and silently, so it is not built in the busiest moment
+          if (w > 0.001 || k === nextUp) { wake(v); v.quietSince = 0; }
           if (!v.out) return;
           smooth(v.out.gain, w, now);
           if (w <= 0.001) {

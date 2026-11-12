@@ -86,7 +86,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.3</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.4</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -725,11 +725,12 @@ function setT(v,fromSlider){
   T=Math.max(0,Math.min(LAST,v));
   if(!fromSlider)slider.value=T;
 }
-slider.addEventListener("input",function(){stop();setT(parseFloat(slider.value),true);});
+slider.addEventListener("input",function(){stop();wakeSound();setT(parseFloat(slider.value),true);});
 // letting go close to a stage settles on it
 slider.addEventListener("change",function(){var r=Math.round(T);if(Math.abs(T-r)<.1)setT(r);});
 function toggle(){
   if(playing){stop();return;}
+  wakeSound();
   if(T>=LAST-.001)setT(0);
   playing=true;playBtn.textContent="Pause";
   var r=Math.round(T);
@@ -741,11 +742,13 @@ function toggle(){
 }
 playBtn.addEventListener("click",toggle);
 // sound starts on a tap, since browsers only allow audio after one
-var sndBtn=document.getElementById("snd"),AC=null,SND=null,soundOn=false;
+var sndBtn=document.getElementById("snd"),AC=null,SND=null,soundOn=false,ended=false;
+// after the journey ends the sound fades away; any interaction brings it back
+function wakeSound(){if(ended){ended=false;if(SND&&soundOn)SND.setOn(true,3);}}
 sndBtn.addEventListener("click",function(){
   try{
     if(!AC){var Ctx=window.AudioContext||window.webkitAudioContext;try{AC=new Ctx({latencyHint:"playback"});}catch(e){AC=new Ctx();}SND=createSoundtrack(AC,AC.destination);}
-    soundOn=!soundOn;
+    soundOn=!soundOn;ended=false;
     if(soundOn)AC.resume();
     SND.setOn(soundOn);
     if(!soundOn)setTimeout(function(){if(!soundOn)AC.suspend();},1200);
@@ -757,8 +760,8 @@ window.addEventListener("keydown",function(e){
   if(e.target===slider)return;
   if(e.code==="Space"){e.preventDefault();toggle();}
   else if(e.code==="KeyM"){sndBtn.click();}
-  else if(e.code==="ArrowRight"){stop();setT(T+.02);}
-  else if(e.code==="ArrowLeft"){stop();setT(T-.02);}
+  else if(e.code==="ArrowRight"){stop();wakeSound();setT(T+.02);}
+  else if(e.code==="ArrowLeft"){stop();wakeSound();setT(T-.02);}
 });
 
 slider.max=LAST;
@@ -794,7 +797,7 @@ function frame(now){
     if(phase==="holding"){
       hold-=dt;
       if(hold<=0){
-        if(T>=LAST-.001){playing=false;phase="moving";playBtn.textContent="Replay";}
+        if(T>=LAST-.001){playing=false;phase="moving";playBtn.textContent="Replay";ended=true;if(SND&&soundOn)SND.setOn(false,8);}
         else{phase="leaving";hold=TEXT_OUT/1000+.4;}
       }
     }else if(phase==="leaving"){
@@ -830,7 +833,7 @@ function frame(now){
   if(zm!==0&&T-kk>0){gl.uniform1f(U.uPass,1);gl.drawArrays(gl.POINTS,0,N);}
   if(SND&&soundOn)SND.update(T,zm);
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 1.3 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 1.4 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
