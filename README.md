@@ -2,6 +2,8 @@
 
 A psychedelic, scientifically grounded journey through 13.8 billion years, from primordial energy to an eye made of a dying star's shed gas. One particle body changes shape through eleven stages, and every stage carries an evidence label and its sources.
 
+**Live:** https://honey-badger-labs.github.io/the-unfolding/
+
 ## Run it
 
 ```sh
