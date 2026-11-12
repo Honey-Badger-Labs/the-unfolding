@@ -86,7 +86,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.5</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.6</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -720,7 +720,19 @@ function dwell(i){
   var e=EVENTS[i];if(!e)return 4;
   return 5+e.note.split(" ").length*.28;
 }
-function stop(){playing=false;phase="moving";playBtn.textContent="Play";}
+// keep the screen awake while the journey plays (Screen Wake Lock; quietly does nothing where unsupported)
+var wakeLock=null;
+function holdScreen(){
+  if(wakeLock||!("wakeLock" in navigator))return;
+  navigator.wakeLock.request("screen").then(function(l){
+    wakeLock=l;l.addEventListener("release",function(){wakeLock=null;});
+    if(!playing)releaseScreen();
+  }).catch(function(){});
+}
+function releaseScreen(){if(wakeLock){wakeLock.release().catch(function(){});wakeLock=null;}}
+// the browser drops the lock when the tab is hidden; take it back on return
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&playing)holdScreen();});
+function stop(){playing=false;phase="moving";playBtn.textContent="Play";releaseScreen();}
 function setT(v,fromSlider){
   T=Math.max(0,Math.min(LAST,v));
   if(!fromSlider)slider.value=T;
@@ -732,7 +744,7 @@ function toggle(){
   if(playing){stop();return;}
   wakeSound();
   if(T>=LAST-.001)setT(0);
-  playing=true;playBtn.textContent="Pause";
+  playing=true;playBtn.textContent="Pause";holdScreen();
   var r=Math.round(T);
   if(Math.abs(T-r)<.015){
     setT(r);phase="holding";
@@ -797,7 +809,7 @@ function frame(now){
     if(phase==="holding"){
       hold-=dt;
       if(hold<=0){
-        if(T>=LAST-.001){playing=false;phase="moving";playBtn.textContent="Replay";ended=true;if(SND&&soundOn)SND.setOn(false,8);}
+        if(T>=LAST-.001){playing=false;phase="moving";playBtn.textContent="Replay";releaseScreen();ended=true;if(SND&&soundOn)SND.setOn(false,8);}
         else{phase="leaving";hold=TEXT_OUT/1000+.4;}
       }
     }else if(phase==="leaving"){
@@ -842,7 +854,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 1.5 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 1.6 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
