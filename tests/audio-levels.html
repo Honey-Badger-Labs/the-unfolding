@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Soundtrack level check</title></head>
+<body>
+<pre id="out">rendering</pre>
+<script src="../audio.js"></script>
+<script>
+// Renders each stage voice alone for a few seconds, offline, and reports its loudness.
+// Open in a browser (served over http) or headless Chrome with --dump-dom.
+(async function () {
+  var rows = [], SECONDS = 6, RATE = 22050;
+  for (var i = 0; i < 12; i++) {
+    var ctx = new OfflineAudioContext(2, RATE * SECONDS, RATE);
+    var snd = createSoundtrack(ctx, ctx.destination);
+    snd.solo(i);
+    var buf = await ctx.startRendering();
+    var d = buf.getChannelData(0), sum = 0, peak = 0;
+    for (var j = RATE * 2; j < d.length; j++) { sum += d[j] * d[j]; peak = Math.max(peak, Math.abs(d[j])); }
+    var rms = Math.sqrt(sum / (d.length - RATE * 2));
+    rows.push(snd.voices[i].name + "\t" + (20 * Math.log10(rms + 1e-9)).toFixed(1) + " dB rms\t" + (20 * Math.log10(peak + 1e-9)).toFixed(1) + " dB peak");
+  }
+  document.getElementById("out").textContent = "voices " + rows.length + "\n" + rows.join("\n");
+})().catch(function (e) { document.getElementById("out").textContent = "ERROR " + e; });
+</script>
+</body>
+</html>

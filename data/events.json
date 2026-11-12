@@ -24,6 +24,7 @@
         "fitW": 0,
         "fitH": 0
       },
+      "sound": "sub-bass drone, a growling filtered saw, grainy noise and a rising wall of harmonics",
       "transition": {
         "type": "morph"
       }
@@ -49,6 +50,7 @@
         "fitW": 2.2,
         "fitH": 0
       },
+      "sound": "glassy open fifths that shimmer, with a breath of high air",
       "transition": {
         "type": "zoom-in",
         "depth": 2.8
@@ -75,6 +77,7 @@
         "fitW": 2.7,
         "fitH": 2.0
       },
+      "sound": "a quiet open pad with scattered bell notes, one per galaxy",
       "transition": {
         "type": "zoom-in",
         "depth": 3.3
@@ -101,6 +104,7 @@
         "fitW": 2.9,
         "fitH": 2.4
       },
+      "sound": "a bright chord pulsing hard, a deep throb and a jet-like hiss",
       "transition": {
         "type": "morph",
         "pace": 0.4
@@ -128,6 +132,7 @@
         "fitW": 3.0,
         "fitH": 1.8
       },
+      "sound": "a warm, slowly breathing D minor 9 pad",
       "transition": {
         "type": "zoom-in",
         "depth": 3.4
@@ -152,6 +157,7 @@
         "fitW": 2.9,
         "fitH": 1.7
       },
+      "sound": "a slow heartbeat at the edge of hearing, deep rumble, one eerie high tone",
       "transition": {
         "type": "zoom-out",
         "depth": 2.6
@@ -175,6 +181,7 @@
         "fitW": 2.5,
         "fitH": 1.7
       },
+      "sound": "breathy, vowel-like noise, as if the cloud were singing, over a soft pad",
       "transition": {
         "type": "zoom-in",
         "depth": 3.1
@@ -202,6 +209,7 @@
         "fitW": 2.4,
         "fitH": 2.2
       },
+      "sound": "a low saw straining against a closing filter, the hiss of infall",
       "transition": {
         "type": "morph"
       }
@@ -227,6 +235,7 @@
         "fitW": 2.5,
         "fitH": 1.5
       },
+      "sound": "the first major chord, bright and warm",
       "transition": {
         "type": "morph"
       }
@@ -253,6 +262,7 @@
         "fitW": 2.9,
         "fitH": 1.5
       },
+      "sound": "a slow music-box arpeggio over a soft pad, like orbits ticking round",
       "transition": {
         "type": "morph"
       }
@@ -280,6 +290,7 @@
         "fitW": 2.4,
         "fitH": 2.4
       },
+      "sound": "low, slow and swelling: a minor third that sighs",
       "transition": {
         "type": "morph"
       }
@@ -305,7 +316,8 @@
         "dist": 5.8,
         "fitW": 3.0,
         "fitH": 2.5
-      }
+      },
+      "sound": "resolution: a still D major 9 with high shimmer"
     }
   ]
 }

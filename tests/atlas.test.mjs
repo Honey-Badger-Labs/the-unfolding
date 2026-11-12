@@ -92,3 +92,10 @@ test("transition pace, when set, stays in a playable range", () => {
     assert.ok(pace >= 0.2 && pace <= 3, `${e.id} pace ${pace} should be between 0.2 and 3`);
   }
 });
+
+test("every stage has a sound cue, and the soundtrack has a voice for it", () => {
+  const audio = read("audio.js");
+  const voiceNames = [...audio.matchAll(/voice\("([a-z]+)"/g)].map((m) => m[1]);
+  assert.equal(voiceNames.length, events.length, "audio.js needs one voice per stage");
+  for (const e of events) assert.ok(typeof e.sound === "string" && e.sound.trim(), `${e.id} needs a sound cue`);
+});

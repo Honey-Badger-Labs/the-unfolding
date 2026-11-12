@@ -9,6 +9,7 @@ This repository has two parts with different terms.
 The software is licensed under the MIT License in [LICENSE](LICENSE). That covers:
 
 - `index.html` (the renderer: its HTML, CSS, JavaScript and GLSL shaders)
+- `audio.js` (the soundtrack generator)
 - `tests/`
 - `.github/`
 - `package.json`
@@ -22,7 +23,7 @@ Everything else is not licensed for reuse. That covers:
 - the Cosmic Atlas text in `data/events.json` (titles, notes, eras, scales and the stage sequence)
 - the documentation in `docs/`, `README.md` and `CLAUDE.md`
 - the name "The Unfolding" and any logo or branding for it
-- recordings, films, stills, installations and other media made from the experience by the copyright holder
+- recordings, films, stills, audio recordings, installations and other media made from the experience by the copyright holder
 
 You may view this content and link to it. You may not copy, adapt, republish or use it commercially without written permission.
 

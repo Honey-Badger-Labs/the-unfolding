@@ -11,11 +11,12 @@ npm run serve        # then open http://localhost:8000
 npm test             # checks the Atlas
 ```
 
-Jump to a stage with a hash: `#quasar`, `#heart`, `#worlds`, `#eye`, or `#t250` for stage 2.5. Space plays and pauses; the arrow keys step.
+Jump to a stage with a hash: `#quasar`, `#heart`, `#worlds`, `#eye`, or `#t250` for stage 2.5. Space plays and pauses, M turns sound on and off, the arrow keys step.
 
 ## How it is built
 
 - **`index.html`** is the whole renderer: one WebGL2 particle system, no build step, no dependencies. Each stage is a shape function in the vertex shader. A morph moves each particle from one shape to the next; a zoom draws both scenes, the one you leave streaming past while the next grows out of the point you aim at.
+- **`audio.js`** is the soundtrack: one live-generated voice per stage (Web Audio, no audio files), crossfaded by the timeline, with a rush of air on every zoom. Press **Sound** or **M**. `tests/audio-levels.html` renders each voice offline and reports its loudness.
 - **`data/events.json`** is the Cosmic Atlas. One record per stage: title, evidence label, era, scale, note, age, sources, camera framing and how the journey leaves it (morph or zoom). The page reads all of its text from here.
 - **`data/sources.json`** lists every source, with the claim it supports.
 - **`tests/atlas.test.mjs`** fails the build if a stage is missing, unsourced, mislabelled, dated out of order, or out of step with the renderer's shape count.
@@ -33,4 +34,4 @@ Every stage is labelled **Observed**, **Model-dependent** or **Artistic interpre
 
 ## Licence
 
-The code (`index.html`, `tests/`, `.github/`, `package.json`) is [MIT](LICENSE). The content (the Atlas text, docs, the name and media made from the experience) is all rights reserved; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
+The code (`index.html`, `audio.js`, `tests/`, `.github/`, `package.json`) is [MIT](LICENSE). The content (the Atlas text, docs, the name and media made from the experience) is all rights reserved; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
