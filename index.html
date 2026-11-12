@@ -30,29 +30,27 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:
 .hud{position:fixed;left:0;right:0;bottom:0;padding:44px 16px 16px;background:linear-gradient(to top,rgba(4,4,11,.92) 35%,rgba(4,4,11,0));display:flex;flex-direction:column;gap:12px}
 .inner{width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .read{display:flex;flex-direction:column;gap:6px;--ease:cubic-bezier(.16,1,.3,1)}
-/* the title unfolds: each letter condenses out of a blur and drifts into place; on leaving it scatters */
+/* text arrives after the visuals settle: heading first, then era and scale, label, note, sources.
+   It leaves in reverse, note first and heading last, before the next visual transition. */
 .w{display:inline-block;white-space:nowrap}
-.c{display:inline-block;opacity:0;filter:blur(10px);transform:translate(var(--dx),var(--dy)) scale(1.7);
-  transition:opacity .9s var(--ease),filter 1s var(--ease),transform 1.2s var(--ease);transition-delay:calc(var(--i)*32ms)}
+.c{display:inline-block;opacity:0;filter:blur(12px);transform:translate(var(--dx),var(--dy)) scale(1.8);
+  transition:opacity 1.6s var(--ease),filter 1.8s var(--ease),transform 2.2s var(--ease);transition-delay:calc(var(--i)*70ms)}
 .read.in .c{opacity:1;filter:blur(0);transform:none}
-.read.out .c{opacity:0;filter:blur(8px);transform:translate(calc(var(--dx)*-1.6),calc(var(--dy)*-1.6)) scale(.5);
-  transition-duration:.45s;transition-timing-function:ease-in;transition-delay:calc(var(--r)*180ms)}
-/* era and scale contract into place */
-.meta{opacity:0;letter-spacing:.45em;transition:opacity .8s var(--ease),letter-spacing 1.1s var(--ease);transition-delay:.25s}
+.read.out .c{opacity:0;filter:blur(10px);transform:translate(calc(var(--dx)*-1.6),calc(var(--dy)*-1.6)) scale(.5);
+  transition-duration:1s;transition-timing-function:ease-in;transition-delay:calc(.5s + var(--r)*.5s)}
+.meta{opacity:0;letter-spacing:.16em;transition:opacity 1.4s var(--ease),letter-spacing 1.8s var(--ease);transition-delay:var(--meta-at,1.6s)}
 .read.in .meta{opacity:1;letter-spacing:0}
-.read.out .meta{opacity:0;transition-duration:.3s;transition-delay:0s}
-/* the evidence label draws its outline, then its text */
-.chip{clip-path:inset(0 100% 0 0);transition:clip-path .7s var(--ease) .45s}
+.read.out .meta{opacity:0;transition-duration:.7s;transition-delay:.3s}
+.chip{clip-path:inset(0 100% 0 0);transition:clip-path 1.2s var(--ease);transition-delay:var(--chip-at,2.2s)}
 .read.in .chip{clip-path:inset(0 0 0 0)}
-.read.out .chip{clip-path:inset(0 0 0 100%);transition-duration:.3s;transition-delay:0s}
-/* the note arrives word by word */
-.nw{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(.45em);
-  transition:opacity .7s var(--ease),filter .7s var(--ease),transform .8s var(--ease);transition-delay:calc(.55s + var(--i)*24ms)}
+.read.out .chip{clip-path:inset(0 0 0 100%);transition-duration:.6s;transition-delay:.4s}
+.nw{display:inline-block;opacity:0;filter:blur(8px);transform:translateY(.5em);
+  transition:opacity 1.2s var(--ease),filter 1.2s var(--ease),transform 1.4s var(--ease);transition-delay:calc(var(--note-at,2.8s) + var(--i)*75ms)}
 .read.in .nw{opacity:1;filter:blur(0);transform:none}
-.read.out .nw{opacity:0;transition-duration:.3s;transition-delay:0s}
-.src{opacity:0;transition:opacity .8s ease}
-.read.in .src{opacity:1;transition-delay:1.4s}
-.read.out .src{opacity:0;transition-duration:.25s}
+.read.out .nw{opacity:0;filter:blur(6px);transition-duration:.6s;transition-delay:0s}
+.src{opacity:0;transition:opacity 1.2s ease}
+.read.in .src{opacity:1;transition-delay:var(--src-at,5s)}
+.read.out .src{opacity:0;transition-duration:.4s;transition-delay:0s}
 @media (prefers-reduced-motion:reduce){
   .c,.nw,.meta,.chip,.src{filter:none!important;transform:none!important;letter-spacing:0!important;clip-path:none!important;transition:opacity .3s!important}
 }
@@ -87,7 +85,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.1</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.2</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -642,7 +640,10 @@ function cam(t){
 }
 
 var slider=document.getElementById("t"),playBtn=document.getElementById("play"),read=document.getElementById("read");
-var T=0,playing=false,shown=-1,swapTimer=0;
+var T=0,playing=false,swapTimer=0;
+var textStage=-2,hiddenAt=0;   // which stage's text is on screen; -1 none, -2 the placeholder
+var phase="moving",hold=0;      // while playing: moving between stages, holding on one, or letting its text leave
+var TEXT_OUT=1600;               // ms for the text to leave
 var EVENTS=[],SOURCES={};
 var LABELS={observed:"Observed",model:"Model-dependent",art:"Artistic interpretation"};
 // split the title into letters (kept whole per word so lines still wrap) and the note into words
@@ -672,14 +673,29 @@ function words(el,text){
     if(i<all.length-1)el.appendChild(document.createTextNode(" "));
   });
 }
-function showStage(i){
-  if(i===shown||!EVENTS[i])return;
-  var first=shown<0;shown=i;
+function hideText(){
+  if(textStage===-1)return;
+  textStage=-1;hiddenAt=performance.now();clearTimeout(swapTimer);
   read.classList.remove("in");read.classList.add("out");
+}
+function showText(i){
+  if(i===textStage||!EVENTS[i])return;
+  var wait=0;
+  if(textStage!==-1){hideText();wait=TEXT_OUT;}
+  else wait=Math.max(0,TEXT_OUT-(performance.now()-hiddenAt));
+  textStage=i;
   clearTimeout(swapTimer);
   swapTimer=setTimeout(function(){
     var e=EVENTS[i];
-    letters(document.getElementById("title"),e.title);
+    var title=document.getElementById("title");
+    letters(title,e.title);
+    // pace the sequence to this title and note
+    var n=e.title.length,nw=e.note.split(" ").length;
+    var metaAt=1.2+n*.07*.6, chipAt=metaAt+.5, noteAt=metaAt+1.1, srcAt=noteAt+nw*.075+1.2;
+    read.style.setProperty("--meta-at",metaAt.toFixed(2)+"s");
+    read.style.setProperty("--chip-at",chipAt.toFixed(2)+"s");
+    read.style.setProperty("--note-at",noteAt.toFixed(2)+"s");
+    read.style.setProperty("--src-at",srcAt.toFixed(2)+"s");
     var chip=document.getElementById("chip");chip.hidden=false;chip.textContent=LABELS[e.label];chip.className="chip "+e.label;
     document.getElementById("era").textContent=e.era;
     document.getElementById("scale").textContent=e.scale;
@@ -694,24 +710,38 @@ function showStage(i){
     read.classList.remove("out");
     void read.offsetWidth;
     requestAnimationFrame(function(){requestAnimationFrame(function(){read.classList.add("in");});});
-  },first?0:520);
+  },wait);
 }
+// how long Play rests on a stage: time for the text to arrive, then time to read it
+function dwell(i){
+  var e=EVENTS[i];if(!e)return 4;
+  return 5+e.note.split(" ").length*.28;
+}
+function stop(){playing=false;phase="moving";playBtn.textContent="Play";}
 function setT(v,fromSlider){
   T=Math.max(0,Math.min(LAST,v));
   if(!fromSlider)slider.value=T;
-  showStage(Math.round(T));
 }
-slider.addEventListener("input",function(){playing=false;playBtn.textContent="Play";setT(parseFloat(slider.value),true);});
+slider.addEventListener("input",function(){stop();setT(parseFloat(slider.value),true);});
+// letting go close to a stage settles on it
+slider.addEventListener("change",function(){var r=Math.round(T);if(Math.abs(T-r)<.1)setT(r);});
 function toggle(){
-  if(!playing&&T>=LAST-.001)setT(0);
-  playing=!playing;playBtn.textContent=playing?"Pause":"Play";
+  if(playing){stop();return;}
+  if(T>=LAST-.001)setT(0);
+  playing=true;playBtn.textContent="Pause";
+  var r=Math.round(T);
+  if(Math.abs(T-r)<.015){
+    setT(r);phase="holding";
+    // its text is already up: a short rest before moving on
+    hold=textStage===r?2:dwell(r);
+  }else phase="moving";
 }
 playBtn.addEventListener("click",toggle);
 window.addEventListener("keydown",function(e){
   if(e.target===slider)return;
   if(e.code==="Space"){e.preventDefault();toggle();}
-  else if(e.code==="ArrowRight"){playing=false;playBtn.textContent="Play";setT(T+.02);}
-  else if(e.code==="ArrowLeft"){playing=false;playBtn.textContent="Play";setT(T-.02);}
+  else if(e.code==="ArrowRight"){stop();setT(T+.02);}
+  else if(e.code==="ArrowLeft"){stop();setT(T-.02);}
 });
 
 slider.max=LAST;
@@ -734,7 +764,6 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
   var h=(location.hash||"").replace("#","");
   if(/^t\d+$/.test(h))names[h]=parseInt(h.slice(1),10)/100;
   if(names[h]!==undefined)setT(names[h]);
-  shown=-1;showStage(Math.round(T));
 }).catch(function(err){
   console.error(err);
   document.getElementById("title").textContent="The Unfolding";
@@ -745,10 +774,25 @@ var last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("
 function frame(now){
   var dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
   if(playing){
-    var fr=T-Math.floor(T);var sp=(.035+.14*Math.pow(Math.sin(Math.PI*fr),2))*(PACE[Math.min(LAST-1,Math.floor(T))]||1);
-    setT(T+sp*dt);
-    if(T>=LAST){playing=false;playBtn.textContent="Replay";}
+    if(phase==="holding"){
+      hold-=dt;
+      if(hold<=0){
+        if(T>=LAST-.001){playing=false;phase="moving";playBtn.textContent="Replay";}
+        else{phase="leaving";hold=TEXT_OUT/1000+.4;}
+      }
+    }else if(phase==="leaving"){
+      hold-=dt;if(hold<=0)phase="moving";
+    }else{
+      var k0=Math.floor(T+1e-6),fr=T-k0;
+      var sp=(.05+.16*Math.pow(Math.sin(Math.PI*fr),2))*(PACE[Math.min(LAST-1,k0)]||1);
+      var nt=T+sp*dt;
+      if(nt>=k0+1||nt>=LAST){nt=Math.min(LAST,k0+1);phase="holding";hold=dwell(Math.round(nt));}
+      setT(nt);
+    }
   }
+  // text only shows while the visuals rest on a stage
+  var near=Math.round(T);
+  if(playing?phase==="holding":Math.abs(T-near)<.015)showText(near);else hideText();
   resize();
   shift=Math.min(.45,Math.max(0,(hudEl.offsetHeight-44)/Math.max(1,canvas.clientHeight)));
   var D=cam(T);
@@ -768,7 +812,7 @@ function frame(now){
   // a zoom draws the arriving scene too
   if(zm!==0&&T-kk>0){gl.uniform1f(U.uPass,1);gl.drawArrays(gl.POINTS,0,N);}
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 1.1 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 1.2 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
