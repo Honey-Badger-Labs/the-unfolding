@@ -17,7 +17,7 @@ Jump to a stage with a hash: `#quasar`, `#heart`, `#worlds`, `#eye`, or `#t250` 
 - **`data/events.json`** is the Cosmic Atlas. One record per stage: title, evidence label, era, scale, note, age, sources and camera framing. The page reads all of its text from here.
 - **`data/sources.json`** lists every source, with the claim it supports.
 - **`tests/atlas.test.mjs`** fails the build if a stage is missing, unsourced, mislabelled, dated out of order, or out of step with the renderer's shape count.
-- **`.github/workflows/pages.yml`** runs the tests on every push and publishes `main` to GitHub Pages.
+- **`.github/workflows/test.yml`** runs the tests on every push. GitHub Pages serves the site straight from the root of `main`.
 
 ## The scientific contract
 
