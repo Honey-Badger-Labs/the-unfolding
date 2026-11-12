@@ -84,3 +84,11 @@ test("every stage but the last says how the journey leaves it", () => {
     if (t.type !== "morph") assert.ok(t.depth > 0 && t.depth < 6, `${e.id} zoom depth should be between 0 and 6`);
   });
 });
+
+test("transition pace, when set, stays in a playable range", () => {
+  for (const e of events) {
+    const pace = e.transition && e.transition.pace;
+    if (pace === undefined) continue;
+    assert.ok(pace >= 0.2 && pace <= 3, `${e.id} pace ${pace} should be between 0.2 and 3`);
+  }
+});

@@ -102,7 +102,8 @@
         "fitH": 2.4
       },
       "transition": {
-        "type": "morph"
+        "type": "morph",
+        "pace": 0.4
       }
     },
     {
