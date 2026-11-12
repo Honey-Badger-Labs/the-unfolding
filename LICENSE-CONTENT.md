@@ -1,6 +1,6 @@
 # Content licence: all rights reserved
 
-Copyright (c) 2026 Jaco Olivier. All rights reserved.
+Copyright (c) 2026 Honey Badger Labs. All rights reserved.
 
 This repository has two parts with different terms.
 
