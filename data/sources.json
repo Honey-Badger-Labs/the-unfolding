@@ -112,6 +112,13 @@
       "publisher": "NASA Scientific Visualization Studio",
       "url": "https://svs.gsfc.nasa.gov/30774",
       "supports": "The pillars are cold hydrogen gas laced with dust, with stars being born deep inside; denser regions shadow the material beneath them from the radiation of nearby stars."
+    },
+    {
+      "id": "eso-pi1-gruis",
+      "title": "Giant bubbles observed on red giant star's surface (ESO press release)",
+      "publisher": "Astronomy Now",
+      "url": "https://astronomynow.com/2017/12/29/giant-bubbles-observed-on-red-giant-stars-surface/",
+      "supports": "ESO's VLT imaged the red giant pi1 Gruis: its surface has just a few convective cells, each about a quarter of the star's diameter. The Sun will become a similar red giant in about five billion years."
     }
   ]
 }

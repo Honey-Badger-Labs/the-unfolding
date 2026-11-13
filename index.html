@@ -88,7 +88,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 2.0</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 2.1</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -426,32 +426,58 @@ void nursery(out vec3 P,out vec3 C,out float S,out float A){
 }
 
 void protostar(out vec3 P,out vec3 C,out float S,out float A){
-  // an infalling envelope, a small disc, a core not yet fusing, and polar jets
+  // a newborn star still buried in its cloud, like those Webb images: gas spirals in along streamers,
+  // spinning faster as it falls, and flattens into a disc; twin jets with glowing knots end in bow shocks;
+  // hourglass cavities carved by the outflow glow faintly in scattered starlight
   float kind=r3.z;
-  if(kind<.08){
-    P=g*.07; C=vec3(1.,.68,.38); S=.03; A=.8;
-  }else if(kind<.33){
-    float r=.14+.75*sqrt(s.x);
-    float th=s.y*TAU+uTime*.5/(pow(r,1.5)+.1);
-    P=vec3(r*cos(th),r*sin(th),g.z*.05*(.3+r));
-    C=mix(vec3(1.,.6,.25),vec3(.7,.25,.1),r); S=.02; A=.5;
-  }else if(kind<.78){
-    float ph=fract(s.x+uTime*.03);
-    float r=mix(2.3,.35,ph*ph);
+  if(kind<.05){
+    P=g*.06; C=vec3(1.,.6,.32)*1.1; S=.03; A=.8;
+  }else if(kind<.25){
+    // the young disc
+    float r=.12+.7*sqrt(s.x);
+    float th=s.y*TAU+uTime*.6/(pow(r,1.5)+.1);
+    P=vec3(r*cos(th),r*sin(th),g.z*.04*(.3+r));
+    C=mix(vec3(1.,.62,.3),vec3(.6,.22,.1),r); S=.02; A=.5;
+  }else if(kind<.62){
+    // infall along streamers: each spins up as it falls (angular momentum) and settles towards the disc
+    float id=floor(r2.x*9.);
+    float ph=fract(s.x+uTime*.025);
+    float r=mix(2.4,.3,ph*ph);
+    float th=hash13(vec3(id,3.,7.))*TAU+1.3/sqrt(r)-1.3/sqrt(2.4)+uTime*.05;
+    float hgt=(hash13(vec3(id,1.,9.))-.5)*2.;
+    P=vec3(r*cos(th),r*sin(th),hgt*r*.55*(1.-ph*.7));
+    P+=flow(P*1.7+id,uTime*.04)*.12*r;                       // streamers wander, not straight spokes
+    P+=g*(.03+.07*r)*(.5+hash13(vec3(id,5.,5.)));
+    C=vec3(.75,.3,.15)*(.3+.7*ph)*smoothstep(0.,.12,ph)*(1.-smoothstep(.92,1.,ph))*(.6+.6*hash13(vec3(id,8.,1.)));
+    S=.03; A=.3;
+  }else if(kind<.74){
+    // the hourglass cavities the outflow has carved, lit faintly blue by scattered starlight
+    float side=r2.z<.5?1.:-1.;
+    float u=pow(s.x,.8);
+    float cr=(.12+.75*pow(u,.65))*(1.+g.x*.08);
+    float a=s.y*TAU;
+    P=vec3(cr*cos(a),cr*sin(a),side*(.08+2.1*u));
+    C=vec3(.45,.6,1.)*(.25+.35*(1.-u)); S=.026; A=.3;
+  }else if(kind<.80){
+    // what is left of the surrounding cloud
     vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
-    d2.z*=mix(.9,.3,ph);
-    P=d2*r;
-    P.xy=rot(uTime*.25/(r+.3)+ph*2.)*P.xy;
-    C=vec3(.8,.34,.18)*(.6+.9*ph)*smoothstep(0.,.1,ph)*(1.-smoothstep(.9,1.,ph));
-    S=.03; A=.4;
+    P=d2*(1.+1.6*sqrt(r3.x)); C=vec3(.4,.15,.1)*.25; S=.04; A=.25;
   }else{
     float side=r3.y<.5?1.:-1.;
-    float h=fract(r2.z+uTime*.12);
-    float wj=.012+.05*h+.12*smoothstep(.85,1.,h);
-    P=vec3(g.x*wj,g.y*wj,side*(.1+2.3*h));
-    float knot=pow(.5+.5*sin(h*22.-uTime*1.5),4.);
-    C=mix(vec3(.5,.85,1.),vec3(1.,.45,.6),knot)*(.3+.9*knot)*(1.-.4*h);
-    S=.018; A=.7;
+    if(r2.x<.25){
+      // a bow shock where the jet slams into the cloud
+      float a=s.y*TAU, rr=.28*sqrt(s.x);
+      P=vec3(rr*cos(a),rr*sin(a),side*(2.35-1.6*rr*rr))+g*.02;
+      C=mix(vec3(1.2,.3,.25),vec3(1.1,.6,.3),s.x); S=.022; A=.45;
+    }else{
+      // the jet itself, studded with glowing knots
+      float h=fract(r2.z+uTime*.08);
+      float wj=.01+.03*h;
+      P=vec3(g.x*wj,g.y*wj,side*(.1+2.2*h));
+      float knot=pow(.5+.5*sin(h*26.-uTime*1.2),6.);
+      C=mix(vec3(.55,.75,1.)*.5,vec3(1.25,.28,.22),knot)*(.35+.9*knot);
+      S=.018; A=.6;
+    }
   }
   P.yz=rot(1.12)*P.yz;
 }
@@ -523,17 +549,31 @@ void worlds(out vec3 P,out vec3 C,out float S,out float A){
 }
 
 void redGiant(out vec3 P,out vec3 C,out float S,out float A){
-  // the swollen star pushes its outer layers off as shells
-  vec3 dir=normalize(g+vec3(1e-4));
-  float giant=step(r2.y,.4);
-  float ph=fract(floor(r3.x*4.)/4.+uTime*.03);
-  float R=.85+1.7*ph;
-  float rg=.8*pow(r3.y,.33)*(1.+.04*sin(uTime*.9));
-  vec3 d2=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
-  P=mix(dir*(R+g.x*.03),d2*rg,giant);
-  vec3 shell=vec3(1.,.45,.2)*(1.-ph)*(1.-ph)+vec3(.15,.5,.6)*ph*(1.-ph)*2.;
-  C=mix(shell,mix(vec3(1.,.3,.1),vec3(1.,.65,.3),r3.z),giant);
-  S=mix(.02,.03,giant); A=mix(.55,.2,giant);
+  // a red giant, modelled on direct images like that of pi1 Gruis: a surface of a few enormous boiling
+  // convection cells, darker and redder towards the edge; shells of shed gas drift outward, faint and dusty
+  if(r2.y<.5){
+    vec3 d=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+    d.z=abs(d.z);                         // only the face towards us; the far side is hidden behind the star
+    float R=1.3*(1.+.03*sin(uTime*.5));
+    P=d*R*(1.+.012*g.x);
+    vec3 q=d; q.xz=rot(uTime*.02)*q.xz;
+    float t=uTime*.07;
+    float cells=sin(3.2*q.x+1.6*sin(2.2*q.y+t))*sin(3.0*q.y+1.8*sin(2.5*q.z-t))*sin(2.8*q.z+1.5*sin(2.*q.x+t*.7));
+    cells=.5+.5*cells+.12*sin(9.*q.x+7.*q.y-t*2.)*sin(8.*q.z-6.*q.x+t);
+    float mu=d.z;
+    C=mix(vec3(.75,.12,.04),vec3(1.25,.6,.22),pow(mu,.6))*(.4+.8*smoothstep(.15,.9,cells))*mix(.35,1.,mu);
+    S=.034; A=.6*max(mu,.12);            // even coverage across the disc, then darker towards the edge
+  }else{
+    float sh=floor(r3.x*5.);
+    float ph=fract(sh/5.+uTime*.012);
+    float Rs=1.45+1.8*ph;
+    vec3 d=normalize(g+vec3(1e-4));
+    float patchy=smoothstep(.1,.7,.5+.5*sin(d.x*5.+sh)*sin(d.y*4.+d.z*3.+sh*2.));
+    P=d*(Rs+g.x*.02);
+    C=mix(vec3(1.,.5,.22),vec3(.4,.5,.8),ph)*(1.-ph)*.9*patchy;
+    S=.024; A=.4;
+    if(P.z<0.&&length(P.xy)<1.3)A=0.;   // shells behind the star are hidden
+  }
 }
 
 void nebulaEye(out vec3 P,out vec3 C,out float S,out float A){
@@ -994,7 +1034,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 2.0 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 2.1 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

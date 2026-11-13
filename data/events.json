@@ -196,7 +196,7 @@
       "label": "observed",
       "era": "4.6 billion years ago, for our Sun",
       "scale": "about 10,000 AU across",
-      "note": "One knot falls in on itself. Spin flattens the infalling gas into a disc, and the newborn star fires narrow jets from its poles.",
+      "note": "One knot falls in on itself. Gas spirals inward, spinning faster, and flattens into a disc while the newborn star fires jets from its poles into glowing shock fronts.",
       "age": [
         9200000000,
         9200000000
@@ -277,15 +277,15 @@
       "label": "model",
       "era": "about 5 billion years from now, for our Sun",
       "scale": "about 2 AU across, and growing",
-      "note": "Our Sun will swell into a red giant, swallow its innermost planets and push its outer layers into space. Older Sun-like stars are doing this now.",
+      "note": "Our Sun will swell into a red giant like pi1 Gruis, its surface a few enormous boiling cells. It swallows its innermost planets and sheds its outer layers in shells.",
       "age": [
         18800000000,
         20000000000
       ],
       "future": true,
       "sources": [
-        "space-sun",
-        "stardate-sun-life"
+        "eso-pi1-gruis",
+        "space-sun"
       ],
       "camera": {
         "dist": 5.8,
