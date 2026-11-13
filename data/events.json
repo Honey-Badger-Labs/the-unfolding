@@ -118,7 +118,7 @@
       "label": "observed",
       "era": "over the next several billion years",
       "scale": "about 100,000 light-years across",
-      "note": "Mergers calm, the black hole goes quiet, and the gas settles into a barred spiral like the Milky Way: two major arms off the bar, two minor ones, dust lanes and pink star-forming regions.",
+      "note": "Mergers calm and the gas settles into a barred spiral like the Milky Way: a dense bulge, arms that thin towards the edge, dust lanes and pink star-forming regions.",
       "age": [
         4000000000,
         9000000000
@@ -237,7 +237,8 @@
       },
       "sound": "the first major chord, bright and warm",
       "transition": {
-        "type": "morph"
+        "type": "morph",
+        "pace": 0.5
       }
     },
     {
@@ -248,7 +249,7 @@
       "label": "model",
       "era": "the next 100 million years or so",
       "scale": "about 100 AU across",
-      "note": "Dust sticks, clumps and collides into planets: small rocky ones close in, giants beyond the frost line where ice survives. Sizes are exaggerated.",
+      "note": "Dust drifts along each ring and gathers into clumps that grow into planets: small rocky ones close in, giants beyond the frost line. Sizes are exaggerated.",
       "age": [
         9200000000,
         9300000000

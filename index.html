@@ -88,7 +88,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.7</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.9</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -134,6 +134,8 @@ const float PR[8]=float[8](.3,.42,.56,.72,1.2,1.62,2.05,2.42);
 const float PS[8]=float[8](.008,.013,.014,.010,.05,.042,.028,.027);
 const vec3 PC[8]=vec3[8](vec3(.6,.55,.5),vec3(.95,.8,.5),vec3(.3,.55,1.),vec3(.9,.4,.25),vec3(.9,.7,.5),vec3(.95,.85,.6),vec3(.6,.9,.95),vec3(.3,.45,1.));
 vec3 s,r2,r3,g; float w;
+float gq=1.;   // how far the galaxy has formed; below 1 only while it forms
+float wq=1.;   // how far the planets have formed; below 1 only while they form
 vec3 hash33(vec3 p){
   p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6)));
   return fract(sin(p)*43758.5453);
@@ -247,46 +249,69 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
 }
 
 void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
-  // a barred spiral like ours: two major arms leave the ends of the bar, two minor arms lie between,
-  // dust lanes run along the inner edges, pink star-forming regions dot the arms
+  // a barred spiral like ours, grown from a gas cloud. gq is how far it has formed (0 cloud, 1 finished):
+  // the cloud starts compact, puffy and pink; as it forms, the disc spreads and flattens, inner parts
+  // spin ahead of outer ones (which winds the arms), and the arms condense out of the haze
   float kind=r3.z;
+  float q=gq, nq=1.-q;
   float pat=uTime*.025;
   float barA=.5+pat;
   float K=3.3;     // log-spiral winding, a pitch of about 17 degrees
   float R0=.55;    // the arms start at the ends of the bar
+  float REDGE=2.85;
+  float spread=mix(.32,1.,pow(q,.7));          // the young disc is compact
+  float puff=mix(10.,1.,q);                    // and thick
+  float scatter=nq*nq;                         // and has no arms yet
   S=.02; A=.5;
-  if(kind<.13){
-    vec3 q=g*vec3(.42,.15,.13);
-    q.xy=rot(barA)*q.xy;
-    P=q; C=mix(vec3(1.,.74,.45),vec3(1.,.9,.72),r2.x); A=.55;
-  }else if(kind<.40){
-    float r=min(2.8,.15-.7*log(1.-.96*r2.x));
+  if(kind<.17){
+    // bulge and bar: dense, bright, old and warm; a big glowing cloud before it settles
+    vec3 q3=g*vec3(.46,.17,.15);
+    q3.xy=rot(barA)*q3.xy;
+    vec3 bul=g*.2;
+    P=mix(bul,q3,step(.45,r2.x))*mix(2.2,1.,q);
+    C=mix(vec3(1.,.72,.42),vec3(1.,.9,.74),r2.x)*1.05; A=.6;
+  }else if(kind<.39){
+    // the old disc: smooth and dim, densest in the middle, with dark lanes along the inner edges of the main arms
+    float r=min(REDGE,.12-.62*log(1.-.96*r2.x));
     float th=s.y*TAU+pat;
-    P=vec3(r*cos(th),r*sin(th),g.z*.035);
-    C=vec3(1.,.86,.66)*.55;
+    P=vec3(r*cos(th),r*sin(th),g.z*.035*puff);
+    C=vec3(1.,.86,.66)*mix(.6,.35,smoothstep(.5,2.6,r));
     float ph=mod(th-barA-K*log(max(r,R0)/R0),PI);
-    float lane=smoothstep(.02,.1,ph)*(1.-smoothstep(.28,.42,ph))*smoothstep(R0,R0+.2,r);
+    float lane=smoothstep(.02,.1,ph)*(1.-smoothstep(.28,.42,ph))*smoothstep(R0,R0+.2,r)*q;
     A=.45*(1.-.85*lane);
+    P.xy*=spread;
   }else{
+    // spiral arms: two major off the bar ends, two minor between; thick and bright near the centre,
+    // thinning and fading towards the edge; yellower inside, bluer outside
     float pick=r2.y;
-    float a0=pick<.34?0.:pick<.68?PI:pick<.84?PI*.5:PI*1.5;
-    float major=step(pick,.68);
-    float rs=mix(.9,R0,major);
+    float a0=pick<.35?0.:pick<.70?PI:pick<.85?PI*.5:PI*1.5;
+    float major=step(pick,.70);
+    float rs=mix(.95,R0,major);
     float knot=step(r3.x,.1);
-    float tr=pow(s.x,.85);
-    if(knot>.5)tr=pow(hash13(vec3(floor(s.x*30.),a0,2.)),.85);
-    float r=rs+(2.75-rs)*tr;
+    float tr=pow(s.x,1.35);
+    if(knot>.5)tr=pow(hash13(vec3(floor(s.x*30.),a0,2.)),1.2);
+    float r=rs+(REDGE-rs)*tr;
+    float edge=smoothstep(rs,REDGE,r);         // 0 at the arm's root, 1 at the rim
     float th=a0+barA+K*log(r/R0);
-    // a third of the arm is glowing gas: a wider, softer cloud around the stars
     float cloud=(1.-knot)*step(hash13(s*7.3+w),.36);
-    th-=abs(g.x)*mix(.1+.03*r,.26+.06*r,cloud)/r*mix(1.,.4,knot);
+    float width=mix(.34,.07,edge)*mix(1.,1.9,cloud)*mix(1.,.45,major<.5?0.:0.)*mix(1.,.4,knot);
+    if(major<.5)width*=.7;
+    th-=abs(g.x)*width/r;
     th+=cloud*g.y*.05/r;
-    float rr=r+g.y*mix(.05,.13,cloud);
-    P=vec3(rr*cos(th),rr*sin(th),g.z*mix(.025,.06,cloud));
-    C=mix(vec3(.55,.7,1.15),vec3(.85,.9,1.),r2.x)*(.55+.5*r3.y)*mix(.7,1.,major);
-    if(cloud>.5){C=mix(vec3(.45,.55,1.),vec3(.9,.45,.75),r3.y)*mix(.45,.6,major);S=.055;A=.16;}
-    if(knot>.5){C=vec3(1.25,.38,.6);S=.018;A=.6;}
+    // formation: no arm structure at first, then differential spin winds the arms into place
+    th+=scatter*(r3.y-.5)*TAU*.9+nq*nq*3.5/(r*spread+.25);
+    float rr=r+g.y*mix(.05,.14,cloud)*mix(1.4,.6,edge);
+    P=vec3(rr*cos(th),rr*sin(th),g.z*mix(.03,.065,cloud)*mix(1.6,.7,edge)*puff);
+    P.xy*=spread;
+    vec3 young=mix(vec3(.55,.7,1.15),vec3(.85,.9,1.),r2.x);
+    vec3 older=vec3(1.,.86,.66);
+    float fade=mix(1.15,.42,edge);
+    C=mix(older,young,smoothstep(.15,.7,edge))*(.55+.5*r3.y)*mix(.72,1.,major)*fade;
+    if(cloud>.5){C=mix(vec3(.45,.55,1.),vec3(.9,.45,.75),r3.y)*mix(.45,.6,major)*fade;S=.055;A=.16;}
+    if(knot>.5){C=vec3(1.25,.38,.6)*mix(1.,.7,edge);S=.018;A=.6*q;}
   }
+  // the forming galaxy glows pink with gas
+  C=mix(vec3(1.,.48,.6)*.55*(.6+.6*r3.y),C,smoothstep(0.,.75,q));
   P.yz=rot(1.05)*P.yz;
 }
 
@@ -397,35 +422,52 @@ void youngStar(out vec3 P,out vec3 C,out float S,out float A){
 }
 
 void worlds(out vec3 P,out vec3 C,out float S,out float A){
-  // rocky planets close in, giants farther out, belts of leftovers
+  // planets grow out of the dust disc. wq is how far they have formed (0 dust rings, 1 finished):
+  // dust drifts along each ring and gathers on a growing clump, the lanes thin to faint lines,
+  // the star at the centre settles and brightens
+  float q=wq;
   int ip=int(min(floor(s.x*8.),7.));
   float pr=PR[ip];
   float hp=hash13(vec3(float(ip),7.,3.));
   float om=.18/(pow(pr,1.5)+.05);
   float a=s.y*TAU+uTime*om;
+  float ph=hp*TAU+uTime*om;                 // where this ring's planet is
+  float dw=.09+.05*pr;                      // the dust ring's width
+  vec3 dustC=mix(vec3(1.,.74,.3),vec3(.85,.4,.18),smoothstep(.3,1.6,pr))*mix(1.05,.6,q);
   float kind=r2.x;
   S=.014; A=.6;
-  if(kind<.07){
-    float ph=hp*TAU+uTime*om;
-    P=vec3(pr*cos(ph),pr*sin(ph),0.)+g*PS[ip];
-    C=PC[ip]*(.6+.5*r3.x); S=.018;
-    A=max(.02,.12*pow(PS[ip]/.05,2.));
-  }else if(kind<.42){
-    P=vec3(pr*cos(a),pr*sin(a),0.)+g*.004;
-    C=vec3(.5,.5,.58)*.16;
+  if(kind<.42){
+    // material that becomes the planet: arrivals are staggered, so the clump grows over time
+    float arrive=smoothstep(r3.x*.75,r3.x*.75+.25,q);
+    float da=mod(a-ph+PI,TAU)-PI;
+    float ang=ph+da*(1.-arrive);
+    float rad=pr+g.x*dw*(1.-arrive);
+    P=vec3(rad*cos(ang),rad*sin(ang),g.z*.03*(1.-arrive))+g*PS[ip]*arrive;
+    C=mix(dustC,PC[ip]*(.6+.5*r3.x),arrive);
+    S=mix(.016,.018,arrive);
+    A=mix(.5,max(.012,.05*pow(PS[ip]/.05,2.)),pow(arrive,.6));
   }else if(kind<.56){
-    float r=.94+g.x*.07;
-    P=vec3(r*cos(a),r*sin(a),g.z*.02); C=vec3(.6,.5,.4)*.4; S=.012;
-  }else if(kind<.74){
-    float r=2.8+g.x*.14;
-    P=vec3(r*cos(a),r*sin(a),g.z*.05); C=vec3(.5,.6,.75)*.3; S=.012;
+    // the ring's lane: a band of dust that thins to a faint orbit line
+    float rad=pr+g.x*dw*(1.-q)+g.x*.004*q;
+    P=vec3(rad*cos(a),rad*sin(a),g.z*.03*(1.-q));
+    C=mix(dustC,vec3(.5,.5,.58)*.16,q);
+    A=mix(.5,.6,q);
+  }else if(kind<.65){
+    // the asteroid belt: leftovers between the rocky worlds and the giants
+    float r=.94+g.x*mix(.14,.07,q);
+    P=vec3(r*cos(a),r*sin(a),g.z*.02); C=mix(dustC,vec3(.6,.5,.4)*.4,q); S=.012;
+  }else if(kind<.80){
+    // the outer belt of icy leftovers
+    float r=2.8+g.x*mix(.25,.14,q);
+    P=vec3(r*cos(a),r*sin(a),g.z*.05); C=mix(dustC*.7,vec3(.5,.6,.75)*.3,q); S=.012;
   }else{
+    // the last of the diffuse dust, fading as the system clears
     float r=.2+2.7*sqrt(r3.y);
-    P=vec3(r*cos(a),r*sin(a),g.z*.03); C=vec3(.5,.4,.3)*.07;
+    P=vec3(r*cos(a),r*sin(a),g.z*.03*(2.-q)); C=dustC*mix(.5,.12,q);
   }
   float core=step(r2.y,.07);
-  P=mix(P,g*.09,core);
-  C=mix(C,vec3(1.,.95,.8),core);
+  P=mix(P,g*mix(.13,.09,q),core);
+  C=mix(C,vec3(1.,.95,.8)*mix(.85,1.,q),core);
   S=mix(S,.035,core); A=mix(A,.85,core);
   P.yz=rot(1.12)*P.yz;
 }
@@ -541,12 +583,26 @@ void main(){
   }else{
     // a morph: each particle travels from its place in one shape to its place in the next
     vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
+    float f=ease(z*1.5-.5*w);
+    float swirl=1.;
+    if(k==3){
+      // the young galaxy collapses into a central cloud, then the spiral grows out of it
+      gq=smoothstep(.22,1.,z);
+      f=ease(z*2.6-.7*w);
+      swirl=.35;
+    }
+    if(k==8){
+      // the star's disc settles into dust rings, then planets gather out of them
+      wq=smoothstep(.18,1.,z);
+      f=ease(z*3.-.6*w);
+      swirl=.25;
+    }
     shape(k,Pa,Ca,Sa,Aa);
     shape(k+1,Pb,Cb,Sb,Ab);
+    gq=1.;wq=1.;
     if(k==GIANT)Pa*=exp(-1.8*zs);   // the giant shrinks to a white dwarf while its shells keep expanding
-    float f=ease(z*1.5-.5*w);
     P=mix(Pa,Pb,f); C=mix(Ca,Cb,f); S=mix(Sa,Sb,f); A=mix(Aa,Ab,f);
-    float sw=sin(PI*f);
+    float sw=sin(PI*f)*swirl;
     P+=flow(P*.9+w*3.,uTime*.5)*.16*sw;
     P.xy=rot(sw*(w-.35)*.9)*P.xy;
     C+=vec3(.25,.12,.3)*sw*r2.x;
@@ -741,6 +797,8 @@ function showText(i){
     requestAnimationFrame(function(){requestAnimationFrame(function(){read.classList.add("in");});});
   },wait);
 }
+letters(document.getElementById("title"),document.getElementById("title").textContent);
+words(document.getElementById("note"),document.getElementById("note").textContent);
 // how long Play rests on a stage: time for the text to arrive, then time to read it
 function dwell(i){
   var e=EVENTS[i];if(!e)return 4;
@@ -886,7 +944,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 1.7 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 1.9 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
