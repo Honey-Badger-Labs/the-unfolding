@@ -74,7 +74,7 @@
 
     // per-voice trims, measured with tests/audio-levels.html so every stage sits near the same loudness
     // (the deepest voices sit a little higher, since the ear hears bass as quieter)
-    var TRIM = { energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.77,
+    var TRIM = { energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.9,
                  nursery: 2.24, collapse: 0.6, star: 1.33, worlds: 2.6, giant: 0.85, eye: 1.41 };
     var voices = [];
     function voice(name, build) {
@@ -160,11 +160,15 @@
 
     // 5 the dark heart: a slow heartbeat at the edge of hearing, deep rumble, one eerie high tone
     voice("heart", function (o) {
-      var beat = gain(0.25); lfo(0.8, 0.25, beat.gain);
-      chain(osc("sine", hz(-5)), beat, o);
-      var beat2 = gain(0.08); lfo(0.8, 0.08, beat2.gain);
-      chain(osc("sine", hz(7)), beat2, o);
-      chain(noise(), filt("lowpass", 110, 1), gain(0.35), o);
+      // the hum: a low fundamental with overtones, so even small speakers carry it
+      var hum = gain(0.6); lfo(0.8, 0.35, hum.gain);
+      chain(osc("sine", hz(-5)), gain(0.5), hum);
+      chain(osc("sine", hz(7)), gain(0.35), hum);
+      chain(osc("triangle", hz(14)), gain(0.12), hum);
+      chain(osc("sine", hz(19)), gain(0.06), hum);
+      chain(hum, o);
+      chain(noise(), filt("lowpass", 140, 1), gain(0.4), o);
+      chain(noise(), filt("bandpass", 190, 3), gain(0.12), o);
       var high = osc("sine", hz(39)); lfo(0.3, 8, high.detune);
       chain(high, gain(0.018), o);
     });
