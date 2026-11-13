@@ -167,13 +167,14 @@
       "id": "stellar-nursery",
       "stage": 6,
       "tick": "Nursery",
-      "title": "A stellar nursery",
+      "title": "Pillars of creation",
       "label": "observed",
       "era": "still happening today",
-      "scale": "tens of light-years across",
-      "note": "Back out in a spiral arm: a cold cloud of gas and dust, lit by young stars. Red is glowing hydrogen, teal is oxygen. Dense knots are where stars begin.",
+      "scale": "pillars a few light-years tall",
+      "note": "Back in a spiral arm: pillars of cold gas and dust, eroded by hot young stars above. Hydrogen glows red, oxygen green-teal. New stars form in the dense tips.",
       "age": null,
       "sources": [
+        "nasa-pillars",
         "astronomy-narrowband"
       ],
       "camera": {
@@ -181,7 +182,7 @@
         "fitW": 2.5,
         "fitH": 1.7
       },
-      "sound": "breathy, vowel-like noise, as if the cloud were singing, over a soft pad",
+      "sound": "breathy, vowel-like noise, as if the pillars were singing, over a soft pad",
       "transition": {
         "type": "zoom-in",
         "depth": 3.1

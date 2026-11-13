@@ -88,7 +88,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 1.9</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 2.0</span></div>
 
 <div class="hud">
   <div class="inner">
@@ -353,25 +353,75 @@ void heart(out vec3 P,out vec3 C,out float S,out float A){
   }
 }
 
+// the pillars of the stellar nursery: base, tip and half-width (a scene like the Pillars of Creation)
+const vec2 PB[3]=vec2[3](vec2(-1.55,-1.75),vec2(-.25,-1.75),vec2(1.,-1.75));
+const vec2 PT[3]=vec2[3](vec2(-1.15,.7),vec2(-.05,.25),vec2(.6,-.2));
+const float PWD[3]=float[3](.52,.43,.36);
+// how far a point is from the nearest pillar's axis, in pillar half-widths (below 1 is inside)
+float pillarDist(vec2 p){
+  float best=9.;
+  for(int i=0;i<3;i++){
+    vec2 ab=PT[i]-PB[i];
+    float t=clamp(dot(p-PB[i],ab)/dot(ab,ab),0.,1.);
+    float wd=PWD[i]*(1.-.5*t);
+    best=min(best,length(p-(PB[i]+ab*t))/wd);
+  }
+  return best;
+}
+
 void nursery(out vec3 P,out vec3 C,out float S,out float A){
-  // a cold cloud lit by young stars, with dense knots about to collapse
+  // pillars of cold gas and dust rising into a glowing cloud. Hot young stars above erode them:
+  // their edges glow gold, the gas shines red (hydrogen) turning green-teal (oxygen) near the stars,
+  // and dense knots at the tips are where new stars begin
   float kind=r3.z;
-  P=(s*2.-1.)*vec3(2.7,1.6,1.1);
-  P+=flow(P*1.3,uTime*.03)*.34;
-  P+=flow(P*2.9+7.,uTime*.05)*.14;
-  float n=sin(P.x*2.1+sin(P.y*3.)*1.3)+sin(P.y*1.7+P.z*2.);
-  float lit=smoothstep(-.5,.8,n);
-  C=mix(vec3(1.4,.32,.45),vec3(.2,.8,.75),smoothstep(.5,1.5,n+r2.x*.6))*(.14+.9*lit);
-  S=.034; A=.4;
-  if(kind<.12){
+  if(kind<.08){
+    // knots at the pillar tips; the first is the one the camera dives into
     float id=floor(r2.x*5.);
-    vec3 kc=id<1.?vec3(.6,-.2,0.):(hash33(vec3(id,3.,1.))*2.-1.)*vec3(2.,1.1,.6);
-    P=kc+g*(.05+.12*r3.x*r3.x);
-    C=vec3(.9,.45,.2)*(.4+.5*r3.y); S=.022; A=.5;
-  }else if(kind<.16){
-    float id=floor(r2.x*40.);
-    P=(hash33(vec3(id,8.,2.))*2.-1.)*vec3(2.3,1.3,.8)+g*.006;
-    C=vec3(.7,.82,1.); S=.02; A=.5;
+    vec2 kc=id<1.?PT[2]:id<2.?PT[0]:id<3.?PT[1]:mix(PB[1],PT[1],.55+.3*hash13(vec3(id,2.,2.)));
+    P=vec3(kc,0.)+g*(.04+.1*r3.x*r3.x);
+    C=vec3(1.,.45,.22)*(.35+.4*r3.y); S=.022; A=.3;
+  }else if(kind<.40){
+    // the pillars: dark dusty interiors, edges and tips lit gold by the stars above
+    int i=r2.z<.45?0:r2.z<.78?1:2;
+    float t=pow(r3.x,.75);
+    vec2 ab=PT[i]-PB[i];
+    vec2 n=normalize(vec2(-ab.y,ab.x));
+    float wd=PWD[i]*(1.-.5*t);
+    float u=clamp(g.x*.45,-1.1,1.1);
+    vec2 c=PB[i]+ab*t+n*u*wd;
+    P=vec3(c,g.z*wd*.55);
+    P.xy+=flow(P*3.+float(i),uTime*.02).xy*.03*wd*4.;
+    float edge=smoothstep(.35,.9,abs(u))*(.55+.45*t);
+    float tip=smoothstep(.85,1.,t)*.7;
+    float lit=max(edge,tip);
+    C=mix(vec3(.55,.3,.17)*.45,vec3(1.05,.72,.4),lit)+vec3(.06,.22,.1)*tip;
+    S=.032; A=mix(.3,.5,lit);
+  }else if(kind<.41){
+    // the young, hot stars above the pillars
+    P=vec3(.4,1.35,-.4)+g*vec3(1.3,.25,.4);
+    C=vec3(.75,.85,1.1); S=r3.y<.2?.05:.03; A=.6;
+  }else if(kind<.43){
+    // stars scattered through the field
+    float id=floor(r2.x*60.);
+    P=(hash33(vec3(id,8.,2.))*2.-1.)*vec3(2.8,1.7,.9)+g*.004;
+    C=vec3(.85,.88,1.); S=.016; A=.45;
+  }else{
+    // the glowing cloud: red hydrogen, green-teal oxygen near the stars, gold along the pillar edges;
+    // nothing glows from behind a pillar, so the pillars stand out dark against it
+    P=(s*2.-1.)*vec3(2.9,1.75,1.1);
+    P+=flow(P*1.3,uTime*.03)*.34;
+    P+=flow(P*2.9+7.,uTime*.05)*.14;
+    float n=sin(P.x*2.1+sin(P.y*3.)*1.3)+sin(P.y*1.7+P.z*2.);
+    float lit=smoothstep(-.5,.8,n);
+    float hy=(P.y+1.75)/3.5;
+    float ox=smoothstep(.45,1.,hy+.3*sin(P.x*1.1+P.z*2.3)+.25*(r2.x-.5));
+    C=mix(vec3(1.3,.14,.2),vec3(.2,1.,.55),ox);
+    C=mix(C,vec3(.8,.06,.1),smoothstep(.6,1.,sin(P.x*3.7+P.y*2.9)*.5+.5)*.35*(1.-ox));
+    float d=pillarDist(P.xy);
+    float rim=exp(-pow((d-1.)*3.,2.));
+    C=mix(C,vec3(1.2,.8,.4),rim*.5)*(.1+.85*lit)*(1.+1.2*rim);
+    S=.05; A=.3;
+    if(P.z<.6)A*=1.-.92*(1.-smoothstep(.75,1.15,d));
   }
 }
 
@@ -506,18 +556,18 @@ void nebulaEye(out vec3 P,out vec3 C,out float S,out float A){
     r=r0+.75*pow(s.x,1.8);
     float ak=(fi+.5)/Nf*TAU+(r3.x-.5)*(.012+.05*(r-r0));
     P=vec3(r*cos(ak),r*sin(ak),g.z*.06);
-    C=mix(vec3(.25,1.,.9),vec3(.1,.4,.85),smoothstep(0.,.7,r-r0))*(.45+.8*fr);
+    C=mix(vec3(.2,1.,.7),vec3(.1,.45,.9),smoothstep(0.,.7,r-r0))*(.45+.8*fr);
     S=.022; A=.5;
   }else if(kind<.90){
     r=1.55+lump+g.x*.3;
     P=vec3(r*cos(a),r*sin(a),g.z*.12);
-    C=mix(vec3(1.,.6,.16),vec3(.95,.18,.1),smoothstep(1.45,2.1,r));
-    C=mix(vec3(.55,.85,.5),C,smoothstep(1.05,1.45,r));
+    C=mix(vec3(1.,.55,.14),vec3(1.05,.1,.1),smoothstep(1.4,2.05,r));
+    C=mix(vec3(.3,.95,.35),C,smoothstep(1.,1.5,r));
     C*=.55+.6*r2.x;
   }else{
     r=2.+lump+1.3*pow(s.x,1.5);
     P=vec3(r*cos(a),r*sin(a),g.z*.2);
-    C=vec3(.7,.12,.1)*(1.-smoothstep(2.4,3.4,r))*.7;
+    C=vec3(.85,.07,.09)*(1.-smoothstep(2.4,3.4,r))*.8;
   }
   P+=flow(P*2.2+fr,uTime*.15)*.035;
   P.x*=1.2;
@@ -543,7 +593,7 @@ void shape(int k,out vec3 P,out vec3 C,out float S,out float A){
 vec3 focus(int k){
   if(k==1){vec3 f=nodePos(vec3(0.));f.xz=rot(uTime*.04)*f.xz;return f;}
   if(k==2)return FC;
-  if(k==6)return vec3(.6,-.2,0.);
+  if(k==6)return vec3(PT[2],0.);   // the knot at the tip of the smallest pillar
   return vec3(0.);
 }
 
@@ -944,7 +994,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 1.9 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 2.0 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

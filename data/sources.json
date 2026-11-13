@@ -105,6 +105,13 @@
       "publisher": "NASA/JPL",
       "url": "https://www.jpl.nasa.gov/news/two-of-the-milky-ways-spiral-arms-go-missing/",
       "supports": "Spitzer showed the Milky Way has two major arms (Scutum-Centaurus and Perseus) joined to the ends of a central bar, with two minor arms between them."
+    },
+    {
+      "id": "nasa-pillars",
+      "title": "Pillars in the Eagle Nebula from Hubble (2014)",
+      "publisher": "NASA Scientific Visualization Studio",
+      "url": "https://svs.gsfc.nasa.gov/30774",
+      "supports": "The pillars are cold hydrogen gas laced with dust, with stars being born deep inside; denser regions shadow the material beneath them from the radiation of nearby stars."
     }
   ]
 }
