@@ -71,7 +71,7 @@ function virtualClock() {
 }
 
 const browser = await puppeteer.launch({
-  executablePath: CHROME,
+  executablePath: CHROME, protocolTimeout: 0,
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars", `--window-size=${W},${H}`],
 });
 const page = await browser.newPage();
@@ -109,6 +109,20 @@ const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-fr
   "-c:v", "libx264", "-preset", "medium", "-crf", "15", "-pix_fmt", "yuv420p", "-movflags", "+faststart", silent], { stdio: ["pipe", "inherit", "inherit"] });
 const cdp = await page.createCDPSession();
 const track = [];
+// The first screenshot waits for the graphics process to finish the warm-up draws queued above, which can take
+// many minutes at full size in software (hence no protocol timeout). If Chrome never answers, ask again
+async function capture() {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const got = await Promise.race([
+      cdp.send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true }).catch(() => null),
+      new Promise((r) => setTimeout(() => r(null), 900000)),
+    ]);
+    if (got && got.data) return got;
+    console.error("\nscreenshot not answered, asking again (" + (attempt + 1) + ")");
+    await page.bringToFront().catch(() => {});
+  }
+  throw new Error("Chrome would not give a screenshot");
+}
 let frame = 0, started = false, endedAt = -1;
 const t0 = Date.now();
 for (;;) {
@@ -117,7 +131,7 @@ for (;;) {
   await step(1000 / FPS);
   const state = await page.evaluate(() => ({ T: parseFloat(document.getElementById("t").value), label: document.getElementById("play").textContent }));
   track.push(state.T);
-  const shot = await cdp.send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true });
+  const shot = await capture();
   if (!ff.stdin.write(Buffer.from(shot.data, "base64"))) await new Promise((r) => ff.stdin.once("drain", r));
   frame++;
   if (started && endedAt < 0) {
