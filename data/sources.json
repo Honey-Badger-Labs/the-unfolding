@@ -140,6 +140,13 @@
       "publisher": "NASA Science",
       "url": "https://science.nasa.gov/?p=199141",
       "supports": "The red giant Sun will swallow Mercury and Venus and not Mars; the fate of Earth is less clear."
+    },
+    {
+      "id": "nasa-black-hole-warped",
+      "title": "NASA Visualization Shows a Black Hole's Warped World",
+      "publisher": "NASA Goddard",
+      "url": "https://www.nasa.gov/universe/nasa-visualization-shows-a-black-holes-warped-world",
+      "supports": "Seen nearly edge-on, light from the far side of the disc is bent over and under the black hole; the side moving towards us looks brighter; the photon ring outlines the shadow."
     }
   ]
 }

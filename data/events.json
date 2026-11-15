@@ -181,10 +181,11 @@
       "label": "observed",
       "era": "at the centre of nearly every large galaxy",
       "scale": "ours fits inside Mercury's orbit; the largest outsize the solar system",
-      "note": "A supermassive black hole. Telescopes have imaged the ring of light around two of them and tracked stars orbiting ours. This view is procedural.",
+      "note": "A supermassive black hole. Its gravity bends light: the far side of the disc arches over the shadow, and the side turning towards us shines brighter. This view is procedural.",
       "age": null,
       "clock": 9000000000,
       "sources": [
+        "nasa-black-hole-warped",
         "physicstoday-sgra",
         "nobel-2020"
       ],
@@ -233,7 +234,7 @@
       "label": "observed",
       "era": "4.6 billion years ago, for our Sun",
       "scale": "about 10,000 AU across",
-      "note": "One knot falls in on itself. Gas spirals inward, spinning faster, and flattens into a disc while the newborn star fires jets from its poles into glowing shock fronts.",
+      "note": "One knot falls in on itself. Spin steers the falling gas onto a disc, where it lands in a flash, while the newborn star fires jets from its poles into glowing shock fronts.",
       "age": [
         9200000000,
         9200000000

@@ -107,7 +107,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.1</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.2</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -360,6 +360,23 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
   P.yz=rot(1.05)*P.yz;
 }
 
+// Gravitational lensing by the black hole, for a distant observer (weak-field point lens).
+// A light ray passing at impact parameter b is bent by an angle 2 rs / b, so a source at depth d behind the
+// hole, offset beta from the line of sight, satisfies  beta = b - 2 rs d / b.  Its two images sit at
+//   b = (beta +- sqrt(beta^2 + 8 rs d)) / 2
+// The first is pushed outward on the same side: the far side of the disc arches over the shadow.
+// The second appears on the opposite side; in the true strong field such images pile up at the photon ring.
+const float RS=.231;          // Schwarzschild radius; the shadow is sqrt(27)/2 times this, 0.6
+vec3 lensed(vec3 P,bool second){
+  float d=-P.z;
+  if(d<=0.)return P;          // in front of the hole: seen directly
+  float beta=length(P.xy);
+  vec2 dir=beta>1e-4?P.xy/beta:vec2(0.,1.);
+  float root=sqrt(beta*beta+8.*RS*d);
+  float b=second?-max(.5*(root-beta),.635):.5*(beta+root);
+  return vec3(dir*b,P.z);
+}
+
 void heart(out vec3 P,out vec3 C,out float S,out float A){
   // a supermassive black hole: its ring of light, its disc, and stars whipping round it
   float kind=r3.z;
@@ -378,12 +395,19 @@ void heart(out vec3 P,out vec3 C,out float S,out float A){
     S=.022; A=.5;
   }else if(kind<.94){
     float r=.95+1.9*pow(s.x,1.6);
-    float th=a+uTime*1.6/pow(r,1.5);
+    // the disc turns so that its left side comes towards us: Doppler beaming makes that side brighter
+    float th=a-uTime*1.6/pow(r,1.5);
     P=vec3(r*cos(th),r*sin(th),g.z*.02*r);
     P.yz=rot(1.3)*P.yz;
     C=mix(vec3(1.,.9,.7),vec3(.9,.22,.07),smoothstep(.95,2.4,r));
     C*=(.3+.7*(.5-.5*cos(th)))*(.7+.3*sin(r*18.+r2.x));
-    S=.02; A=.55;
+    S=.02; A=.75;
+    // light from the far side is bent round the hole: over the top, and a fainter image underneath
+    if(P.z<0.){
+      bool second=r3.x<.22;
+      P=lensed(P,second);
+      if(second){C*=.55;S=.016;}
+    }
   }else{
     float id=floor(s.x*14.);
     vec3 h=hash33(vec3(id,4.,8.));
@@ -394,6 +418,7 @@ void heart(out vec3 P,out vec3 C,out float S,out float A){
     P=vec3(r*cos(M+om),r*sin(M+om),0.);
     P.yz=rot(hash13(vec3(id,5.,6.))*PI)*P.yz;
     P+=g*.006;
+    P=lensed(P,false);                                   // a star passing behind is displaced round the shadow
     C=mix(vec3(.6,.75,1.),vec3(1.,.8,.55),h.y)*.8; S=.016; A=.45;
   }
 }
@@ -479,25 +504,41 @@ void protostar(out vec3 P,out vec3 C,out float S,out float A){
   // hourglass cavities carved by the outflow glow faintly in scattered starlight
   float kind=r3.z;
   if(kind<.05){
-    P=g*.06; C=vec3(1.,.6,.32)*1.1; S=.03; A=.8;
+    P=normalize(g+vec3(1e-4))*.07*pow(r3.y,.4); C=vec3(1.,.6,.32)*1.1; S=.03; A=.8;
   }else if(kind<.25){
     // the young disc
-    float r=.12+.7*sqrt(s.x);
+    float r=.12+.7*sqrt(s.x);                       // out to the centrifugal radius, where the infall lands
     float th=s.y*TAU+uTime*.6/(pow(r,1.5)+.1);
     P=vec3(r*cos(th),r*sin(th),g.z*.04*(.3+r));
     C=mix(vec3(1.,.62,.3),vec3(.6,.22,.1),r); S=.02; A=.5;
   }else if(kind<.62){
-    // infall along streamers: each spins up as it falls (angular momentum) and settles towards the disc
-    float id=floor(r2.x*9.);
-    float ph=fract(s.x+uTime*.025);
-    float r=mix(2.4,.3,ph*ph);
-    float th=hash13(vec3(id,3.,7.))*TAU+1.3/sqrt(r)-1.3/sqrt(2.4)+uTime*.05;
-    float hgt=(hash13(vec3(id,1.,9.))-.5)*2.;
-    P=vec3(r*cos(th),r*sin(th),hgt*r*.55*(1.-ph*.7));
-    P+=flow(P*1.7+id,uTime*.04)*.12*r;                       // streamers wander, not straight spokes
-    P+=g*(.03+.07*r)*(.5+hash13(vec3(id,5.,5.)));
-    C=vec3(.75,.3,.15)*(.3+.7*ph)*smoothstep(0.,.12,ph)*(1.-smoothstep(.92,1.,ph))*(.6+.6*hash13(vec3(id,8.,1.)));
-    S=.03; A=.3;
+    // Rotating collapse (the Ulrich 1976 / Cassen-Moosman 1981 solution). Each parcel of gas falls freely on a
+    // parabolic orbit about the star, keeping its angular momentum. Starting from polar angle theta0 it follows
+    //   r = rc sin^2(theta0) / (1 - cos(theta)/cos(theta0)),   cos(phi - phi0) = tan(theta0)/tan(theta)
+    // and lands on the disc at r = rc sin^2(theta0): gas from near the poles lands close in, gas from near the
+    // equator at the disc's edge rc. Free fall gives r proportional to (time left)^(2/3), so the density
+    // climbs inward as r^(-3/2) and the gas speeds up as it nears the star.
+    float rc=.82, rmax=2.7;
+    float mu0=(r2.x*2.-1.)*.9;                       // cos(theta0); the polar caps are swept clear by the outflow
+    mu0=sign(mu0+1e-5)*max(abs(mu0),.03);
+    float sin0=sqrt(1.-mu0*mu0);
+    float rland=rc*sin0*sin0;
+    float u=fract(s.x+uTime*.03);
+    float uland=1.-pow(rland/rmax,1.5);
+    float r=max(rland,rmax*pow(max(1.-u,0.),.6667));
+    float mu=mu0*(1.-rland/r);                       // cos(theta) along the streamline
+    float sn=sqrt(max(1.-mu*mu,1e-6));
+    float phi0=s.y*TAU;
+    float phi=phi0+acos(clamp(sin0*(1.-rland/r)/sn,0.,1.));
+    // once landed, the parcel is part of the disc and orbits at the Keplerian rate
+    phi+=max(u-uland,0.)/.03*.6/(pow(rland,1.5)+.1);
+    P=r*vec3(sn*cos(phi),sn*sin(phi),mu)+g*.025*(.4+r);
+    // the infall is clumpy: brighter along a few streamers
+    float stream=.3+.9*pow(.5+.5*sin(phi0*3.+mu0*5.+1.7*sin(phi0*2.)),2.);
+    float shock=exp(-pow((u-uland)*30.,2.));         // the flash where the gas hits the disc
+    C=mix(vec3(.85,.3,.16),vec3(1.2,.62,.26),1.-smoothstep(.3,2.4,r))*stream*1.5+vec3(1.,.8,.5)*shock;
+    C*=smoothstep(0.,.06,u)*(1.-smoothstep(.93,1.,u));
+    S=.03; A=.5;
   }else if(kind<.74){
     // the hourglass cavities the outflow has carved, lit faintly blue by scattered starlight
     float side=r2.z<.5?1.:-1.;
@@ -1239,7 +1280,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.1 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.2 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
