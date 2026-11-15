@@ -9,7 +9,7 @@
 // Open in a browser (served over http) or headless Chrome with --dump-dom.
 (async function () {
   var rows = [], SECONDS = 6, RATE = 22050;
-  for (var i = 0; i < 12; i++) {
+  for (var i = 0; i < 14; i++) {
     var ctx = new OfflineAudioContext(2, RATE * SECONDS, RATE);
     var snd = createSoundtrack(ctx, ctx.destination);
     snd.solo(i);

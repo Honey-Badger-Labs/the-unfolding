@@ -1,10 +1,40 @@
 {
-  "version": "0.2.0",
-  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, or a zoom in or out by 'depth' e-folds of scale.",
+  "version": "0.3.0",
+  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, or a zoom in or out by 'depth' e-folds of scale. 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
   "events": [
     {
-      "id": "primordial-energy",
+      "id": "the-beginning",
       "stage": 0,
+      "tick": "Begin",
+      "title": "The beginning",
+      "label": "model",
+      "era": "the first instant",
+      "scale": "everything we can see, packed together",
+      "note": "Our whole observable universe, hot and dense beyond imagining. Not an explosion into empty space: there is no outside. Space itself begins to expand, everywhere at once.",
+      "age": [
+        0,
+        0
+      ],
+      "clock": 0,
+      "tempo": "the clock starts here",
+      "sources": [
+        "nasa-universe",
+        "openstax-cmb"
+      ],
+      "camera": {
+        "dist": 3.4,
+        "fitW": 0,
+        "fitH": 0
+      },
+      "sound": "a deep, slow om: a low drone that opens into a vowel and closes to a hum",
+      "transition": {
+        "type": "morph",
+        "pace": 0.6
+      }
+    },
+    {
+      "id": "primordial-energy",
+      "stage": 1,
       "tick": "Energy",
       "title": "Primordial energy",
       "label": "model",
@@ -15,6 +45,7 @@
         0,
         380000
       ],
+      "clock": 380000,
       "sources": [
         "nasa-universe",
         "openstax-cmb"
@@ -31,7 +62,7 @@
     },
     {
       "id": "cosmic-web",
-      "stage": 1,
+      "stage": 2,
       "tick": "Web",
       "title": "Structure emerges",
       "label": "observed",
@@ -42,6 +73,7 @@
         200000000,
         1000000000
       ],
+      "clock": 500000000,
       "sources": [
         "nasa-cosmic-web"
       ],
@@ -58,7 +90,7 @@
     },
     {
       "id": "protocluster",
-      "stage": 2,
+      "stage": 3,
       "tick": "Cluster",
       "title": "A city of galaxies",
       "label": "observed",
@@ -69,6 +101,7 @@
         3000000000,
         4500000000
       ],
+      "clock": 3600000000,
       "sources": [
         "esa-webb-spiderweb"
       ],
@@ -85,7 +118,7 @@
     },
     {
       "id": "young-galaxy-quasar",
-      "stage": 3,
+      "stage": 4,
       "tick": "Quasar",
       "title": "A young galaxy blazes",
       "label": "observed",
@@ -96,6 +129,7 @@
         2000000000,
         4500000000
       ],
+      "clock": 3800000000,
       "sources": [
         "nature-quasar-peak"
       ],
@@ -112,7 +146,7 @@
     },
     {
       "id": "galaxy-settles",
-      "stage": 4,
+      "stage": 5,
       "tick": "Galaxy",
       "title": "A galaxy like ours",
       "label": "observed",
@@ -123,6 +157,7 @@
         4000000000,
         9000000000
       ],
+      "clock": 7000000000,
       "sources": [
         "jpl-milky-way-arms",
         "nature-quasar-peak"
@@ -140,7 +175,7 @@
     },
     {
       "id": "supermassive-black-hole",
-      "stage": 5,
+      "stage": 6,
       "tick": "Heart",
       "title": "The dark heart",
       "label": "observed",
@@ -148,6 +183,7 @@
       "scale": "ours fits inside Mercury's orbit; the largest outsize the solar system",
       "note": "A supermassive black hole. Telescopes have imaged the ring of light around two of them and tracked stars orbiting ours. This view is procedural.",
       "age": null,
+      "clock": 9000000000,
       "sources": [
         "physicstoday-sgra",
         "nobel-2020"
@@ -165,7 +201,7 @@
     },
     {
       "id": "stellar-nursery",
-      "stage": 6,
+      "stage": 7,
       "tick": "Nursery",
       "title": "Pillars of creation",
       "label": "observed",
@@ -173,6 +209,7 @@
       "scale": "pillars a few light-years tall",
       "note": "Back in a spiral arm: pillars of cold gas and dust, eroded by hot young stars above. Hydrogen glows red, oxygen green-teal. New stars form in the dense tips.",
       "age": null,
+      "clock": 9190000000,
       "sources": [
         "nasa-pillars",
         "astronomy-narrowband"
@@ -190,7 +227,7 @@
     },
     {
       "id": "cloud-collapse",
-      "stage": 7,
+      "stage": 8,
       "tick": "Collapse",
       "title": "A cloud collapses",
       "label": "observed",
@@ -201,6 +238,7 @@
         9200000000,
         9200000000
       ],
+      "clock": 9200000000,
       "sources": [
         "esa-webb-hh211",
         "stardate-sun-life"
@@ -212,22 +250,55 @@
       },
       "sound": "a low saw straining against a closing filter, the hiss of infall",
       "transition": {
-        "type": "morph"
+        "type": "zoom-in",
+        "depth": 3.6
       }
     },
     {
-      "id": "star-ignites",
-      "stage": 8,
-      "tick": "Star",
-      "title": "A star ignites",
-      "label": "observed",
-      "era": "within the first million years",
-      "scale": "about 200 AU across",
-      "note": "Fusion begins. Around the star, dust settles into a disc with rings and gaps, like those ALMA imaged around the young star HL Tauri.",
+      "id": "fusion-ignites",
+      "stage": 9,
+      "tick": "Fusion",
+      "title": "Fusion ignites",
+      "label": "model",
+      "era": "when the core nears 15 million degrees",
+      "scale": "atomic nuclei, a million-billionth of a metre across",
+      "note": "In the core, hydrogen nuclei repel each other until heat and pressure force some close enough to fuse, each fusion releasing energy. When the burn holds steady, a star is born.",
       "age": [
         9200000000,
         9201000000
       ],
+      "clock": 9200000000,
+      "tempo": "slowed enormously: real nuclei meet in an instant",
+      "sources": [
+        "nasa-solar-interior",
+        "eurofusion-sun"
+      ],
+      "camera": {
+        "dist": 5.6,
+        "fitW": 2.7,
+        "fitH": 1.6
+      },
+      "sound": "a low hum under a quickening crackle of bright notes, one for each fusion",
+      "transition": {
+        "type": "zoom-out",
+        "depth": 3.2,
+        "pace": 0.55
+      }
+    },
+    {
+      "id": "star-ignites",
+      "stage": 10,
+      "tick": "Star",
+      "title": "A new star shines",
+      "label": "observed",
+      "era": "within the first million years",
+      "scale": "about 200 AU across",
+      "note": "The new star lights the disc of dust around it, which settles into rings and gaps like those ALMA imaged around the young star HL Tauri.",
+      "age": [
+        9200000000,
+        9201000000
+      ],
+      "clock": 9201000000,
       "sources": [
         "eso-hl-tau"
       ],
@@ -244,7 +315,7 @@
     },
     {
       "id": "worlds-form",
-      "stage": 9,
+      "stage": 11,
       "tick": "Worlds",
       "title": "Worlds form",
       "label": "model",
@@ -255,6 +326,7 @@
         9200000000,
         9300000000
       ],
+      "clock": 9300000000,
       "sources": [
         "osu-solar-system-birth",
         "eso-hl-tau"
@@ -266,25 +338,28 @@
       },
       "sound": "a slow music-box arpeggio over a soft pad, like orbits ticking round",
       "transition": {
-        "type": "morph"
+        "type": "morph",
+        "pace": 0.5
       }
     },
     {
       "id": "red-giant",
-      "stage": 10,
+      "stage": 12,
       "tick": "Giant",
       "title": "The star sheds its shell",
       "label": "model",
       "era": "about 5 billion years from now, for our Sun",
       "scale": "about 2 AU across, and growing",
-      "note": "Our Sun will swell into a red giant like pi1 Gruis, its surface a few enormous boiling cells. It swallows its innermost planets and sheds its outer layers in shells.",
+      "note": "Our Sun will swell into a red giant like pi1 Gruis, its surface a few enormous boiling cells. It will swallow Mercury and Venus, perhaps Earth, but not Mars.",
       "age": [
         18800000000,
         20000000000
       ],
       "future": true,
+      "clock": 18800000000,
       "sources": [
         "eso-pi1-gruis",
+        "nasa-red-giant-planets",
         "space-sun"
       ],
       "camera": {
@@ -294,23 +369,25 @@
       },
       "sound": "low, slow and swelling: a minor third that sighs",
       "transition": {
-        "type": "morph"
+        "type": "morph",
+        "pace": 0.5
       }
     },
     {
       "id": "nebula-eye",
-      "stage": 11,
+      "stage": 13,
       "tick": "Eye",
       "title": "The universe looks back",
       "label": "observed",
       "era": "about 5 billion years from now; the Helix shows it today",
       "scale": "nearly 3 light-years across",
-      "note": "What our Sun will leave behind. The Helix Nebula, about 650 light-years away, is a real shell like this. The shape is procedural; the eye is our reading.",
+      "note": "The star sheds its outer layers in waves. Its bare core, a white dwarf, lights them from within. The Helix Nebula, 650 light-years away, is a real one; the eye is our reading.",
       "age": [
         19000000000,
         20000000000
       ],
       "future": true,
+      "clock": 18800000000,
       "sources": [
         "nasa-helix"
       ],

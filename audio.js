@@ -74,7 +74,7 @@
 
     // per-voice trims, measured with tests/audio-levels.html so every stage sits near the same loudness
     // (the deepest voices sit a little higher, since the ear hears bass as quieter)
-    var TRIM = { energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.9,
+    var TRIM = { beginning: 0.5, fusion: 1.6, energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.9,
                  nursery: 2.24, collapse: 0.6, star: 1.33, worlds: 2.6, giant: 0.85, eye: 1.41 };
     var voices = [];
     function voice(name, build) {
@@ -99,7 +99,19 @@
 
     // ---------- the twelve stage voices
 
-    // 0 primordial energy: sub-bass, a growling filtered saw, grainy noise, a rising wall of harmonics
+    // the beginning: a deep "om". A low drone through two vowel formants that slowly open ("o")
+    // and close to a hum ("m")
+    voice("beginning", function (o) {
+      var src = gain(1);
+      chain(osc("sawtooth", hz(0), -5), src); chain(osc("sawtooth", hz(0), 5), src); chain(osc("sawtooth", hz(-12)), src);
+      var open = gain(0.5); lfo(0.06, 0.45, open.gain);
+      chain(src, filt("bandpass", 400, 5), open); chain(src, filt("bandpass", 780, 7), gain(0.5), open);
+      chain(open, gain(0.5), o);
+      chain(src, filt("lowpass", 220, 2), gain(0.35), o);
+      chain(osc("sine", hz(0)), gain(0.3), o);
+    });
+
+    // primordial energy: sub-bass, a growling filtered saw, grainy noise, a rising wall of harmonics
     voice("energy", function (o) {
       chain(osc("sine", hz(-12)), gain(0.45), o);
       var lp = filt("lowpass", 180, 6); lfo(0.07, 120, lp.frequency);
@@ -112,7 +124,7 @@
       });
     });
 
-    // 1 cosmic web: glassy open fifths that shimmer, a breath of high air
+    // cosmic web: glassy open fifths that shimmer, a breath of high air
     voice("web", function (o) {
       [24, 31, 36, 38].forEach(function (s, i) {
         var g = gain(0.05); lfo(0.04 + i * 0.03, 0.035, g.gain);
@@ -121,7 +133,7 @@
       chain(noise(), filt("highpass", 5500), gain(0.02), o);
     });
 
-    // 2 protocluster: a quiet open pad and scattered bell-like notes, one per galaxy
+    // protocluster: a quiet open pad and scattered bell-like notes, one per galaxy
     voice("cluster", function (o, v) {
       chain(osc("sine", hz(12)), gain(0.05), o);
       chain(osc("sine", hz(19)), gain(0.04), o);
@@ -136,7 +148,7 @@
       };
     });
 
-    // 3 young galaxy and quasar: a pulsing, bright chord driven hard, a deep throb, a hiss like the jets
+    // young galaxy and quasar: a pulsing, bright chord driven hard, a deep throb, a hiss like the jets
     voice("quasar", function (o) {
       var lp = filt("lowpass", 900, 5); lfo(6.5, 500, lp.frequency);
       var g = gain(0.09);
@@ -147,7 +159,7 @@
       chain(noise(), filt("bandpass", 2600, 0.7), gain(0.06), o);
     });
 
-    // 4 a galaxy like ours: a warm, slowly breathing D minor 9 pad
+    // a galaxy like ours: a warm, slowly breathing D minor 9 pad
     voice("galaxy", function (o) {
       var lp = filt("lowpass", 1100, 1); lfo(0.05, 400, lp.frequency);
       [0, 3, 7, 10, 14].forEach(function (s, i) {
@@ -158,7 +170,7 @@
       chain(osc("sine", hz(0)), gain(0.14), o);
     });
 
-    // 5 the dark heart: a slow heartbeat at the edge of hearing, deep rumble, one eerie high tone
+    // the dark heart: a slow heartbeat at the edge of hearing, deep rumble, one eerie high tone
     voice("heart", function (o) {
       // the hum: a low fundamental with overtones, so even small speakers carry it
       var hum = gain(0.6); lfo(0.8, 0.35, hum.gain);
@@ -173,7 +185,7 @@
       chain(high, gain(0.018), o);
     });
 
-    // 6 stellar nursery: breathy vowel-like noise, as if the cloud were singing, over a soft pad
+    // stellar nursery: breathy vowel-like noise, as if the cloud were singing, over a soft pad
     voice("nursery", function (o) {
       var f1 = filt("bandpass", 650, 8), f2 = filt("bandpass", 1150, 10);
       lfo(0.09, 80, f1.frequency); lfo(0.07, 120, f2.frequency);
@@ -182,7 +194,7 @@
       chain(osc("sine", hz(24)), gain(0.035), o);
     });
 
-    // 7 a cloud collapses: a low saw straining against a closing filter, the hiss of infall
+    // a cloud collapses: a low saw straining against a closing filter, the hiss of infall
     voice("collapse", function (o) {
       var lp = filt("lowpass", 300, 8); lfo(0.25, 200, lp.frequency);
       chain(osc("sawtooth", hz(0)), lp, gain(0.12), o);
@@ -190,7 +202,22 @@
       chain(osc("sine", hz(-12)), gain(0.3), o);
     });
 
-    // 8 a star ignites: the first major chord, bright and warm
+    // fusion: a low hum under a quickening crackle of bright notes, one for each fusion
+    voice("fusion", function (o, v) {
+      chain(osc("sine", hz(12)), gain(0.12), o);
+      var bp = filt("bandpass", 3200, 2); lfo(0.4, 1500, bp.frequency);
+      chain(noise(), bp, gain(0.05), o);
+      var notes = [0, 7, 12, 14, 19, 24];
+      v.tick = function (t, horizon) {
+        while (v.next < t + horizon) {
+          if (v.next < t) v.next = t;
+          pluck(o, hz(48 + notes[Math.floor(Math.random() * notes.length)]), v.next, 0.35, 0.05, "sine");
+          v.next += 0.08 + Math.random() * 0.3;
+        }
+      };
+    });
+
+    // a star ignites: the first major chord, bright and warm
     voice("star", function (o) {
       [24, 28, 31, 36].forEach(function (s, i) {
         var g = gain(0.045); lfo(0.11 + i * 0.02, 0.015, g.gain);
@@ -199,7 +226,7 @@
       chain(osc("sine", hz(12)), gain(0.1), o);
     });
 
-    // 9 worlds form: a slow music-box arpeggio over a soft pad, like orbits ticking round
+    // worlds form: a slow music-box arpeggio over a soft pad, like orbits ticking round
     voice("worlds", function (o, v) {
       chain(osc("sine", hz(24)), gain(0.035), o);
       chain(osc("sine", hz(31)), gain(0.025), o);
@@ -215,7 +242,7 @@
       };
     });
 
-    // 10 the star sheds its shell: low, slow, swelling, a minor third that sighs
+    // the star sheds its shell: low, slow, swelling, a minor third that sighs
     voice("giant", function (o) {
       var lp = filt("lowpass", 420, 2);
       var a = osc("sawtooth", hz(0)), b = osc("sawtooth", hz(3));
@@ -226,7 +253,7 @@
       chain(osc("sine", hz(-12)), gain(0.22), o);
     });
 
-    // 11 the universe looks back: resolution, a still D major 9 with high shimmer
+    // the universe looks back: resolution, a still D major 9 with high shimmer
     voice("eye", function (o) {
       [24, 31, 38, 40].forEach(function (s, i) {
         var g = gain(0.042); lfo(0.03 + i * 0.015, 0.012, g.gain);

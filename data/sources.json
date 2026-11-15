@@ -119,6 +119,27 @@
       "publisher": "Astronomy Now",
       "url": "https://astronomynow.com/2017/12/29/giant-bubbles-observed-on-red-giant-stars-surface/",
       "supports": "ESO's VLT imaged the red giant pi1 Gruis: its surface has just a few convective cells, each about a quarter of the star's diameter. The Sun will become a similar red giant in about five billion years."
+    },
+    {
+      "id": "nasa-solar-interior",
+      "title": "The Solar Interior",
+      "publisher": "NASA Marshall Space Flight Center",
+      "url": "https://solarscience.msfc.nasa.gov/interior.shtml",
+      "supports": "The Sun's core is where nuclear reactions turn hydrogen into helium, by the proton-proton chain: in the first step two protons collide to produce deuterium, a positron and a neutrino."
+    },
+    {
+      "id": "eurofusion-sun",
+      "title": "Fusion on the Sun",
+      "publisher": "EUROfusion",
+      "url": "https://euro-fusion.org/fusion/fusion-on-the-sun/",
+      "supports": "At about 15 million degrees C in the Sun's core, hydrogen nuclei move so fast that collisions overcome their electrostatic repulsion and they fuse, in three steps, into helium."
+    },
+    {
+      "id": "nasa-red-giant-planets",
+      "title": "NASA Science article quoting astronomer Dimitri Veras on the Sun's red giant phase",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/?p=199141",
+      "supports": "The red giant Sun will swallow Mercury and Venus and not Mars; the fate of Earth is less clear."
     }
   ]
 }

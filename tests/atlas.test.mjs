@@ -99,3 +99,11 @@ test("every stage has a sound cue, and the soundtrack has a voice for it", () =>
   assert.equal(voiceNames.length, events.length, "audio.js needs one voice per stage");
   for (const e of events) assert.ok(typeof e.sound === "string" && e.sound.trim(), `${e.id} needs a sound cue`);
 });
+
+test("the journey's clock is set for every stage and never runs backwards", () => {
+  const sorted = [...events].sort((a, b) => a.stage - b.stage);
+  sorted.forEach((e, i) => {
+    assert.ok(typeof e.clock === "number" && e.clock >= 0, `${e.id} needs a clock (years after the Big Bang)`);
+    if (i) assert.ok(e.clock >= sorted[i - 1].clock, `${e.id} clock runs backwards`);
+  });
+});

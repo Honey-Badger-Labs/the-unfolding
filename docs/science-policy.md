@@ -25,3 +25,9 @@ A stage can show a procedural shape and still be **Observed** if the note says t
 - Planet sizes and orbital speeds are scaled for visibility.
 - The cosmic web, galaxies and nebulae are procedural, not survey data or images.
 - The journey follows one line of descent (web → galaxy → star → planets) and skips the many generations of stars that made the heavy elements.
+- Every transition is a time-lapse: millions to billions of years pass in seconds. The cosmic clock shows how fast.
+- The clock is the journey's own clock. Stages that are not tied to one epoch (the black hole, the pillars) still get a place on it.
+- Fusion is drawn enormously larger and slower than real, and only its first step (two hydrogen nuclei meeting) is shown.
+- Real young stars show ringed discs before hydrogen fusion fully ignites; the journey shows ignition first.
+- The beginning is shown from inside: a glare that thins as space expands. There is no outside view, because there is no outside.
+- In the red giant scene Earth is swallowed; its real fate is uncertain. Mars survives.
