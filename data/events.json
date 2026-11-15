@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, or a zoom in or out by 'depth' e-folds of scale. 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
   "events": [
     {
@@ -57,7 +57,8 @@
       },
       "sound": "sub-bass drone, a growling filtered saw, grainy noise and a rising wall of harmonics",
       "transition": {
-        "type": "morph"
+        "type": "morph",
+        "pace": 0.55
       }
     },
     {
@@ -68,14 +69,15 @@
       "label": "observed",
       "era": "hundreds of millions of years on",
       "scale": "about 500 million light-years across",
-      "note": "Gravity pulls dark matter and gas into filaments and nodes. Galaxy surveys map this web; the shape drawn here is procedural, not survey data.",
+      "note": "The first glow fades and gravity works in the dark, drawing matter into filaments and nodes where the first stars ignite. Surveys map this web; the shape drawn here is procedural.",
       "age": [
         200000000,
         1000000000
       ],
       "clock": 500000000,
       "sources": [
-        "nasa-cosmic-web"
+        "nasa-cosmic-web",
+        "astronomy-first-stars"
       ],
       "camera": {
         "dist": 5.6,
@@ -152,7 +154,7 @@
       "label": "observed",
       "era": "over the next several billion years",
       "scale": "about 100,000 light-years across",
-      "note": "Mergers calm and the gas settles into a barred spiral like the Milky Way: a dense bulge, arms that thin towards the edge, dust lanes and pink star-forming regions.",
+      "note": "Mergers calm and the gas settles into a barred spiral like the Milky Way: a dense bulge, trailing arms that thin towards the edge, dust lanes on their inner sides, pink star-forming regions.",
       "age": [
         4000000000,
         9000000000
@@ -160,7 +162,8 @@
       "clock": 7000000000,
       "sources": [
         "jpl-milky-way-arms",
-        "nature-quasar-peak"
+        "nature-quasar-peak",
+        "ned-spiral-waves"
       ],
       "camera": {
         "dist": 5.8,
@@ -196,8 +199,11 @@
       },
       "sound": "a slow heartbeat at the edge of hearing, deep rumble, one eerie high tone",
       "transition": {
-        "type": "zoom-out",
-        "depth": 2.6
+        "type": "out-in",
+        "depth": 3.4,
+        "via": "galaxy-settles",
+        "depth2": 3.1,
+        "pace": 0.5
       }
     },
     {

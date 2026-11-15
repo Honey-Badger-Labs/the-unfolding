@@ -168,6 +168,20 @@
       "publisher": "BBC Sky at Night Magazine",
       "url": "https://www.skyatnightmagazine.com/astrophotography/planets/jupiter/",
       "supports": "Jupiter's equatorial diameter is 142,984 km, 11.2 times Earth's."
+    },
+    {
+      "id": "astronomy-first-stars",
+      "title": "The beginning to the end of the universe: The first stars are born",
+      "publisher": "Astronomy",
+      "url": "https://www.astronomy.com/science/the-beginning-to-the-end-of-the-universe-the-first-stars-are-born/",
+      "supports": "No stars shone until about 100 million years after the Big Bang; gravity, helped by dark matter, pulled gas into the clumps where the first stars formed."
+    },
+    {
+      "id": "ned-spiral-waves",
+      "title": "Spiral structure (essay by R. G. Carlberg)",
+      "publisher": "NASA/IPAC Extragalactic Database",
+      "url": "https://ned.ipac.caltech.edu/level5/ESSAYS/Carlberg/carlberg.html",
+      "supports": "Spiral arms trail the rotation; inner stars overtake the arm pattern and outer stars fall behind it; dust lanes lie on the inner side of the arms."
     }
   ]
 }

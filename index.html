@@ -107,7 +107,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.3</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.4</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -140,7 +140,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 var VS=`#version 300 es
 precision highp float;
 layout(location=0) in vec4 aSeed;
-uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom,uSpin;
+uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom,uSpin,uZoom2,uVia,uGrow;
 uniform vec2 uField;
 out vec3 vCol;
 out float vA;
@@ -164,6 +164,7 @@ float wfl=0.;  // cosmic web: matter streaming along the filaments into the node
 float gsp=0.;  // galaxy: extra spin as we dive to its centre, fastest near the middle
 float kq=0.;   // nursery: how far the knot we dive into has contracted
 float jq=1.;   // gas giant: 0 a hot young planet still drawing gas from its disc, 1 formed
+float wig=0.;  // set by web(): the order in which its matter first lights up (0 the nodes, 1 mid-filament)
 float keep=0.; // set by worlds(): 1 for the planet that survives the red giant (Mars)
 vec3 hash33(vec3 p){
   p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6)));
@@ -225,6 +226,7 @@ void web(out vec3 P,out vec3 C,out float S,out float A){
   P=mix(P,na+g*.09,home);
   C=mix(C,vec3(1.,.92,.8)*1.3,home);
   A=mix(A,.9,home);
+  wig=isFil*min(u,1.-u)*2.;
   P.xz=rot(uTime*.04)*P.xz;
 }
 
@@ -270,21 +272,21 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
     float id=floor(r2.z*7.);
     vec3 h=hash33(vec3(id,2.,5.));
     float cr=.4+1.2*h.x;
-    float ca=h.y*TAU+uTime*.12/(cr+.3);
+    float ca=h.y*TAU-uTime*.12/(cr+.3);
     P=(vec3(cr*cos(ca),cr*sin(ca),(h.z-.5)*.3)+g*(.12+.16*h.z))*1.3;
     C=mix(vec3(.55,.75,1.3),vec3(1.2,.45,.75),h.z)*(.5+.5*r2.x);
     S=.024; A=.5;
   }else if(kind<.62){
     float side=r2.z<.5?1.:-1.;
     float u=r3.x;
-    float a=side*1.7*u+(side>0.?.4:PI+.4)+uTime*.03;
+    float a=side*1.7*u+(side>0.?.4:PI+.4)-uTime*.03;
     float r=1.1+1.7*u;
     P=(vec3(r*cos(a),r*sin(a),.3*side*u)+g*(.07+.24*u))*1.3;
     C=vec3(.65,.6,1.)*(.7*(1.-u)+.2);
     S=.02; A=.45;
   }else{
     float r=1.7*sqrt(r3.y);
-    float a=s.y*TAU+uTime*.1/(r+.3);
+    float a=s.y*TAU-uTime*.1/(r+.3);
     P=vec3(r*cos(a),r*sin(a),g.z*.28);
     P+=flow(P*1.6,uTime*.08)*.2;
     P*=1.3;
@@ -294,38 +296,55 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   P.yz=rot(1.0)*P.yz;
 }
 
+// the barred spiral: winding of its arms, where they leave the bar, and the arm region we later dive into
+const float GK=3.3, GR0=.55, GEDGE=2.85, GRH=1.62;
+vec3 galaxyHome(){
+  float th=.5-uTime*.025+GK*log(GRH/GR0);
+  vec3 p=vec3(GRH*cos(th),GRH*sin(th),0.);
+  p.yz=rot(1.05)*p.yz;
+  return p;
+}
 void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
   // a barred spiral like ours, grown from a gas cloud. gq is how far it has formed (0 cloud, 1 finished):
   // the cloud starts compact, puffy and pink; as it forms, the disc spreads and flattens, inner parts
-  // spin ahead of outer ones (which winds the arms), and the arms condense out of the haze
+  // spin ahead of outer ones (which winds the arms), and the arms condense out of the haze.
+  // Everything turns clockwise, so the arms trail, as in almost every real spiral
   float kind=r3.z;
   float q=gq, nq=1.-q;
-  float pat=uTime*.025;
+  float pat=-uTime*.025;                       // the bar and arm pattern turn together
   float barA=.5+pat;
-  float K=3.3;     // log-spiral winding, a pitch of about 17 degrees
-  float R0=.55;    // the arms start at the ends of the bar
-  float REDGE=2.85;
+  float K=GK, R0=GR0, REDGE=GEDGE;
   float spread=mix(.32,1.,pow(q,.7));          // the young disc is compact
   float puff=mix(10.,1.,q);                    // and thick
   float scatter=nq*nq;                         // and has no arms yet
   S=.02; A=.5;
   if(kind<.2){
-    // bulge and bar: dense, bright, old and warm; a big glowing cloud before it settles
-    vec3 q3=g*vec3(.46,.17,.15);
-    q3.xy=rot(barA+gsp*1.4)*q3.xy;
-    vec3 bul=g*.27;
-    P=mix(bul,q3,step(.45,r2.x))*mix(2.2,1.,q);
-    C=mix(vec3(1.,.78,.5),vec3(1.,.93,.8),r2.x)*1.2; A=.6;
-  }else if(kind<.39){
-    // the old disc: smooth and dim, densest in the middle, with dark lanes along the inner edges of the main arms
+    // bulge and bar: dense, bright, old and warm; a big glowing cloud before it settles.
+    // The bulge is brightest at its very centre and fades into a wide soft glow
+    vec3 q3=g*vec3(.48,.15,.13);
+    q3.xy=rot(-barA+gsp*1.4)*q3.xy;
+    vec3 bul=g*vec3(.34,.34,.25)*(.3+1.25*r3.y*r3.y);
+    float isBar=step(.5,r2.x);
+    P=mix(bul,q3,isBar)*mix(2.2,1.,q);
+    C=mix(vec3(1.,.8,.52),vec3(1.,.93,.8),r2.x)*mix(1.25,1.05,isBar); A=.5;
+  }else if(kind<.38){
+    // the old disc: smooth and dim, densest in the middle. Its stars orbit faster than the arm pattern
+    // inside, slower outside, passing through the arms; dark dust lanes lie along the arms' inner edges
     float r=min(REDGE,.12-.62*log(1.-.96*r2.x));
-    float th=s.y*TAU+pat+gsp*.9/(r+.3);
+    float th=s.y*TAU-uTime*.05/(r+.25)-gsp*.9/(r+.3);
     P=vec3(r*cos(th),r*sin(th),g.z*.035*puff);
-    C=vec3(1.,.86,.66)*mix(.6,.35,smoothstep(.5,2.6,r));
+    C=vec3(1.,.86,.66)*mix(.72,.4,smoothstep(.5,2.6,r));
     float ph=mod(th-barA-K*log(max(r,R0)/R0),PI);
-    float lane=smoothstep(.02,.1,ph)*(1.-smoothstep(.28,.42,ph))*smoothstep(R0,R0+.2,r)*q;
-    A=.45*(1.-.93*lane);
+    float lane=smoothstep(.015,.07,ph)*(1.-smoothstep(.24,.4,ph))*smoothstep(R0,R0+.2,r)*q;
+    A=.45*(1.-.95*lane);
     P.xy*=spread;
+  }else if(kind<.395){
+    // the halo: old globular clusters swarming round the centre, far above and below the disc
+    float id=floor(r2.x*70.);
+    vec3 h=hash33(vec3(id,6.,3.));
+    vec3 c=normalize(h-.5+1e-4)*(.35+2.1*pow(hash13(vec3(id,1.,7.)),1.6))*spread;
+    P=c+g*.012;
+    C=vec3(1.,.88,.7)*.6; S=.013; A=.38*q;
   }else{
     // spiral arms: two major off the bar ends, two minor between; thick and bright near the centre,
     // thinning and fading towards the edge; yellower inside, bluer outside
@@ -334,27 +353,50 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     float major=step(pick,.70);
     float rs=mix(.95,R0,major);
     float knot=step(r3.x,.1);
+    float spur=step(.1,r3.x)*step(r3.x,.27);
     float tr=pow(s.x,1.35);
-    if(knot>.5)tr=pow(hash13(vec3(floor(s.x*30.),a0,2.)),1.2);
-    float r=rs+(REDGE-rs)*tr;
+    // gas and young stars bunch along the arm, like beads on a string
+    tr+=(.0075*sin(tr*83.+a0*5.)+.016*sin(tr*29.+a0*2.+1.))*(1.-knot);
+    float kid=floor(s.x*34.);
+    vec3 kh=hash33(vec3(kid,a0,2.));
+    if(knot>.5)tr=pow(kh.x,1.2);
+    // spurs: short feathers that leave an arm's outer edge at a steeper angle
+    float sid=floor(s.x*13.);
+    float su=r2.z;
+    if(spur>.5)tr=.08+.8*hash13(vec3(sid,a0,5.));
+    float home=0.;
+    if(knot>.5&&kid<1.&&a0<.1){home=1.;tr=(GRH-rs)/(REDGE-rs);}   // the star-forming region we will dive into
+    float r=rs+(REDGE-rs)*clamp(tr,0.,1.);
     float edge=smoothstep(rs,REDGE,r);         // 0 at the arm's root, 1 at the rim
-    float th=a0+barA+K*log(r/R0)+gsp*.9/(r+.3);
-    float cloud=(1.-knot)*step(hash13(s*7.3+w),.36);
-    float width=mix(.34,.07,edge)*mix(1.,1.9,cloud)*mix(1.,.45,major<.5?0.:0.)*mix(1.,.4,knot);
+    float th=a0+barA+K*log(r/R0);
+    if(spur>.5){float r1=r*(1.+.46*su);th+=1.15*log(r1/r);r=r1;}
+    th-=gsp*.9/(r+.3);
+    float thk=th;
+    float cloud=(1.-knot)*step(hash13(s*7.3+w),.42);
+    float width=mix(.4,.11,edge)*mix(1.,1.9,cloud)*mix(1.,.4,knot)*mix(1.,.4,spur);
     if(major<.5)width*=.7;
     th-=abs(g.x)*width/r;
     th+=cloud*g.y*.05/r;
     // formation: no arm structure at first, then differential spin winds the arms into place
     th+=scatter*(r3.y-.5)*TAU*.9+nq*nq*3.5/(r*spread+.25);
-    float rr=r+g.y*mix(.05,.14,cloud)*mix(1.4,.6,edge);
+    float rr=r+g.y*mix(.05,.14,cloud)*mix(1.4,.6,edge)*mix(1.,.5,spur);
     P=vec3(rr*cos(th),rr*sin(th),g.z*mix(.03,.065,cloud)*mix(1.6,.7,edge)*puff);
     P.xy*=spread;
     vec3 young=mix(vec3(.62,.58,1.2),vec3(.85,.85,1.05),r2.x);
     vec3 older=vec3(1.,.86,.66);
-    float fade=mix(1.15,.42,edge);
+    float fade=mix(1.15,.42,edge)*mix(1.,.95*(1.-.6*su),spur);
     C=mix(older,young,smoothstep(.15,.7,edge))*(.55+.5*r3.y)*mix(.72,1.,major)*fade;
     if(cloud>.5){C=mix(vec3(.5,.45,1.05),vec3(.95,.45,.8),r3.y)*mix(.45,.6,major)*fade;S=.055;A=.16;}
-    if(knot>.5){C=vec3(1.25,.38,.6)*mix(1.,.7,edge);S=.018;A=.6*q;}
+    if(knot>.5){
+      // glowing hydrogen where stars are being born, and the hot blue clusters that just formed there
+      float big=step(kh.y,.25);
+      float blue=step(.62,kh.z);
+      float kr=mix(.014,.034,big)*(1.+.6*home);
+      float ko=(kh.z-.3)*1.2*width/r+blue*.03/r;         // young clusters drift just downstream of the gas that made them
+      thk+=nq*nq*3.5/(r*spread+.25)-ko-abs(g.x)*.012/r;
+      P=vec3(r*cos(thk),r*sin(thk),0.)*spread+g*kr*vec3(1.,1.,.6);
+      C=mix(vec3(1.25,.36,.58),vec3(.7,.82,1.3),blue)*mix(1.,.7,edge)*(.6+.5*r2.x);S=mix(.02,.03,big);A=.42*q;
+    }
   }
   // the forming galaxy glows pink with gas
   C=mix(vec3(1.,.48,.6)*.55*(.6+.6*r3.y),C,smoothstep(0.,.75,q));
@@ -870,13 +912,26 @@ void main(){
   float z=clamp(uT-kf,0.,1.);
   float zs=z*z*(3.-2.*z);
   vec3 P,C; float S,A;
+  vec3 Pa,Pb=vec3(0.),Ca,Cb=vec3(0.); float Sa,Sb=0.,Aa,Ab=0.;
   float hw=0.,hr=.6; vec3 hc=vec3(0.);
 
-  if(uZoom!=0.){
-    // a true zoom: pass 0 draws the scene we leave, pass 1 the scene we arrive at
-    float L=abs(uZoom);
-    bool first=uPass<.5;
-    float zz=zs;                                   // how far the camera move has gone
+  // Every transition draws at most two scenes, a and b. First decide which, and the state each is drawn in;
+  // the shapes are evaluated once each, below, which keeps the shader small and quick to compile
+  bool outin=uZoom2!=0., zoom=uZoom!=0., first=uPass<.5;
+  bool two=!(zoom||k==0);
+  int ia=k, ib=k+1;
+  float zz=zs;                                   // how far a zoom's camera move has gone
+  // out and in again: pull back until the whole of a larger scene is in view, then dive to one place in it.
+  // Before the turning point the two passes draw the scene we leave and the larger one;
+  // after it, the larger one and the scene we arrive at
+  int mid=int(uVia);
+  float zr=z-.09*sin(TAU*z);                     // linger at the turning point
+  bool outw=zr<.5;
+  float za=smoothstep(0.,1.,clamp(zr*2.,0.,1.)), zb=smoothstep(0.,1.,clamp(zr*2.-1.,0.,1.));
+  if(outin){
+    ia=outw?(first?k:mid):(first?mid:k+1);
+  }else if(zoom){
+    ia=first?k:k+1;
     if(first){
       if(k==WEB)wfl=z*1.2;                         // matter streams into the node ahead
       if(k==GALAXY)gsp=2.2*zs;                     // the inner galaxy whirls faster as we close in
@@ -890,8 +945,46 @@ void main(){
       if(first)fq=mix(.35,1.,smoothstep(0.,.5,z));
       zz=smoothstep(.38,1.,z);
     }
-    shape(first?k:k+1,P,C,S,A);
-    wfl=0.;gsp=0.;kq=0.;fq=.35;jq=1.;wq=1.;
+  }else if(k==0){
+    // the first expansion: fastest at the start, then slowing
+    ia=ENERGY; bq=(1.-exp(-4.5*z))/(1.-exp(-4.5));
+  }else if(k==GIANT){
+    // the star pulses as it throws off its outer layers, and what is left shrinks to a white-hot core
+    float pulse=.5+.5*cos((z-.08)/.0917*TAU);
+    gr=mix(1.,.06,smoothstep(.08,.85,z))*(1.+.07*pulse*(1.-smoothstep(.6,.75,z)));
+  }
+  shape(ia,Pa,Ca,Sa,Aa);
+  float kp=keep;
+  wfl=0.;gsp=0.;kq=0.;fq=.35;jq=1.;wq=1.;bq=1.;gr=1.;
+  float Rs=mix(.11,1.3,pow(zs,1.15));              // the swelling Sun's radius (worlds to red giant)
+  if(two){
+    if(k==WORLDS){gr=Rs/1.3;gsh=smoothstep(.74,1.,z);}
+    if(k==QUASAR)gq=smoothstep(.22,1.,z);          // the spiral grows out of a central cloud
+    shape(ib,Pb,Cb,Sb,Ab);
+    gr=1.;gsh=1.;gq=1.;
+  }
+  float ig=wig;
+  P=Pa;C=Ca;S=Sa;A=Aa;
+
+  if(outin){
+    float L1=abs(uZoom), L2=uZoom2, M=.88;
+    vec3 home=mid==GALAXY?galaxyHome():vec3(0.);
+    vec3 aim=home*smoothstep(.36,.74,zr);        // the place we will dive to drifts to the middle of the view
+    float sc=M*exp(L1*(1.-za)+L2*zb);            // the size of the larger scene on screen
+    if(ia==mid){
+      P=(P-aim)*sc;
+      A*=outw?smoothstep(.06,.5,za):1.-smoothstep(.55,.95,zb);
+    }else if(outw){
+      P=(P*exp(-L1)/M-aim)*sc;
+      A*=1.-smoothstep(.5,.95,za);
+    }else{
+      P=(home-aim)*sc+P*exp(L2*(zb-1.));
+      A*=smoothstep(.42,.85,zb);
+    }
+    if(k==HEART&&outw){hc=-aim*sc;hr=.6*exp(-L1*za);hw=1.-smoothstep(.5,.95,za);}
+  }else if(zoom){
+    // a true zoom: pass 0 draws the scene we leave, pass 1 the scene we arrive at
+    float L=abs(uZoom);
     if(uZoom>0.){
       // fly towards the focus: the old scene streams past, the new one grows out of that point
       vec3 foc=focus(k);
@@ -913,22 +1006,32 @@ void main(){
       if(k==HEART){hc=off;hr=.6*exp(-L*zz);hw=1.-smoothstep(.5,.95,zz);}
     }
   }else if(k==0){
-    // the first expansion: fastest at the start, then slowing
-    bq=(1.-exp(-4.5*z))/(1.-exp(-4.5));
-    energy(P,C,S,A);
-    bq=1.;
+    // drawn above: the primordial energy at an earlier, denser moment
+  }else if(k==ENERGY){
+    // gravity builds the web (the Zel'dovich approximation): every parcel of matter drifts in a straight line
+    // from where it began towards the nearest filament or node, x = q + D psi. The growth D follows the clock:
+    // while matter dominates, D grows as time^(2/3), so for most of the span little seems to happen and then
+    // structure sharpens fast. Meanwhile the first glow cools out of sight (the dark ages), and about
+    // 100 million years in, the first stars light the densest knots, then the filaments (cosmic dawn)
+    vec3 q=Pa*mix(vec3(1.),vec3(2.7/uField.x,2.7/uField.y,1.2),smoothstep(0.,.7,z));   // the same matter, seen from further back
+    q+=flow(q*2.3+5.,0.)*.11+flow(q.zxy*4.1+2.,0.)*.05;   // no two voids open alike
+    float D=exp(-uGrow*(1.-z));
+    D=1.-pow(1.-D,1.5);                          // it settles as it arrives
+    P=q+D*(Pb-q);
+    float glow=1.-smoothstep(.02,.34,z);         // the afterglow reddens and fades as space stretches its light
+    vec3 dark=vec3(.36,.3,.62)*.8;              // unlit gas, shown faintly so gravity's work can be seen
+    float ti=.76+.14*ig+.03*w;
+    float lit=smoothstep(ti,ti+.07,z);
+    float flash=exp(-pow((z-ti-.04)/.045,2.));
+    C=mix(dark,Ca*mix(vec3(1.),vec3(1.,.35,.2),smoothstep(0.,.3,z)),glow);
+    C=mix(C,Cb,lit)+vec3(.45,.65,1.2)*flash*.7;
+    S=mix(Sa,Sb,smoothstep(.05,.5,z));
+    A=mix(mix(.36,Aa,glow),Ab,lit);
   }else if(k==WORLDS){
     // the Sun's far future: the star swells and reddens while we close in on the inner system.
     // Each orbit is swallowed as the surface reaches it; Mars is left just outside
-    vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
     float Z=mix(1.,2.32,zs);
-    float Rs=mix(.11,1.3,pow(zs,1.15));
-    shape(k,Pa,Ca,Sa,Aa);
-    float kp=keep;
     Pa*=Z;
-    gr=Rs/1.3; gsh=smoothstep(.74,1.,z);
-    shape(k+1,Pb,Cb,Sb,Ab);
-    gr=1.;gsh=1.;
     float surf=step(r2.y,.5);
     float isCore=step(r2.y,.07);
     float eaten=max(1.-smoothstep(Rs-.1,Rs+.02,length(Pa)),isCore*smoothstep(0.,.12,z));
@@ -940,14 +1043,8 @@ void main(){
     P=mix(Pa,Pb,fpos); S=mix(Sa,Sb,fpos); C=mix(Ca,Cb,fpos);
     A=mix(Aa*(1.-gone),Ab*mix(back,1.,eaten*surf),fpos);
   }else if(k==GIANT){
-    // the star pulses and throws off its outer layers in waves, outermost first; what is left shrinks to a
-    // white-hot core, and its light makes the shed gas glow from the inside out
-    vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
-    float pulse=.5+.5*cos((z-.08)/.0917*TAU);
-    gr=mix(1.,.06,smoothstep(.08,.85,z))*(1.+.07*pulse*(1.-smoothstep(.6,.75,z)));
-    shape(k,Pa,Ca,Sa,Aa);
-    gr=1.;
-    shape(k+1,Pb,Cb,Sb,Ab);
+    // the layers leave in waves, outermost first, and the bare core's light makes the shed gas glow
+    // from the inside out
     float rb=length(Pb.xy);
     float wave=floor((1.-clamp(rb/3.3,0.,1.))*6.)/6.;
     float te=.08+.55*wave+.04*w;
@@ -959,18 +1056,13 @@ void main(){
     P=mix(Pa,Pb,fi); C=mix(Ca,Cb,fi); S=mix(Sa,Sb,fi); A=mix(Aa,Ab,fi);
   }else{
     // a morph: each particle travels from its place in one shape to its place in the next
-    vec3 Pa,Pb,Ca,Cb; float Sa,Sb,Aa,Ab;
     float f=ease(z*1.5-.5*w);
     float swirl=1.;
     if(k==QUASAR){
       // the young galaxy collapses into a central cloud, then the spiral grows out of it
-      gq=smoothstep(.22,1.,z);
       f=ease(z*2.6-.7*w);
       swirl=.35;
     }
-    shape(k,Pa,Ca,Sa,Aa);
-    shape(k+1,Pb,Cb,Sb,Ab);
-    gq=1.;wq=1.;
     P=mix(Pa,Pb,f); C=mix(Ca,Cb,f); S=mix(Sa,Sb,f); A=mix(Aa,Ab,f);
     float sw=sin(PI*f)*swirl;
     P+=flow(P*.9+w*3.,uTime*.5)*.16*sw;
@@ -1024,7 +1116,7 @@ gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
 gl.linkProgram(prog);
 if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(prog));document.getElementById("fail").style.display="flex";return;}
 gl.useProgram(prog);
-var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom","uSpin"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom","uSpin","uZoom2","uVia","uGrow"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
 
 var COUNTS=[60000,120000,240000];
 var coarse=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches;
@@ -1060,7 +1152,7 @@ function resize(){
 window.addEventListener("resize",resize);resize();
 
 var TAN=0.4663; // tan(25 deg)
-var CAMS=[], TRANS=[], PACE=[], CLOCK=[], TEMPO=[], shift=0;
+var CAMS=[], TRANS=[], TRANS2=[], VIA=[], PACE=[], CLOCK=[], TEMPO=[], shift=0;
 // the cosmic clock: years since the Big Bang at any point of the journey
 var NOW=13.8e9;
 function clockAt(t){
@@ -1283,12 +1375,17 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
     // how we leave this stage: 0 morph, +depth zoom in, -depth zoom out
     var tr=e.transition;
     TRANS[k]=!tr||tr.type==="morph"?0:tr.type==="zoom-in"?tr.depth:-tr.depth;
+    // "out-in": pull back to a larger scene (via), then dive into it by depth2
+    TRANS2[k]=tr&&tr.type==="out-in"?tr.depth2:0;
+    VIA[k]=0;if(TRANS2[k])EVENTS.forEach(function(v,j){if(v.id===tr.via)VIA[k]=j;});
     PACE[k]=tr&&tr.pace?tr.pace:1;
     CLOCK[k]=e.clock;TEMPO[k]=e.tempo||"";
     var i=document.createElement("i");i.textContent=e.tick;ticks.appendChild(i);
     names[e.tick.toLowerCase()]=k;
   });
   if(names.jupiter!==undefined)JUP=names.jupiter;
+  // structure grows as time^(2/3) between the primordial energy and the web, in step with the clock
+  if(CLOCK[1]>0&&CLOCK[2]>CLOCK[1])GROW=2/3*Math.log(CLOCK[2]/CLOCK[1]);
   reserveText();
   // optional start position: #galaxy, or #t250 for stage 2.5
   var h=(location.hash||"").replace("#","");
@@ -1300,6 +1397,7 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
   document.getElementById("note").textContent="The Atlas could not be loaded, so stage notes are unavailable. The visuals still run.";
 });
 
+var GROW=4.79;
 var spinT=0,JUP=-1; // the gas giant's own clock, restarted each visit so its storm is in view
 var warm=0,last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("fps");
 function frame(now){
@@ -1344,23 +1442,27 @@ function frame(now){
   gl.uniform1f(U.uAlpha,.42*Math.sqrt(120000/N));
   gl.uniform2f(U.uField,Math.max(1.5,2.8*aspect),2.8*(1+shift));
   var kk=Math.min(LAST-1,Math.floor(T)),zm=TRANS[kk]||0;
+  var zm2=TRANS2[kk]||0;
   gl.uniform1f(U.uZoom,zm);
+  gl.uniform1f(U.uZoom2,zm2);
+  gl.uniform1f(U.uVia,VIA[kk]||0);
+  gl.uniform1f(U.uGrow,GROW);
   gl.uniform1f(U.uPass,0);
   gl.drawArrays(gl.POINTS,0,N);
   // a zoom draws the arriving scene too
   if(zm!==0&&T-kk>0){gl.uniform1f(U.uPass,1);gl.drawArrays(gl.POINTS,0,N);}
-  if(SND&&soundOn)SND.update(T,zm);
+  if(SND&&soundOn)SND.update(T,zm2&&T-kk>.5?zm2:zm);
   // warm-up: once the Atlas is in, draw every stage and zoom pass once, invisibly, one per frame
   if(EVENTS.length&&warm<LAST*2){
     var wk=warm>>1;
     gl.colorMask(false,false,false,false);
-    gl.uniform1f(U.uT,wk+.5);gl.uniform1f(U.uZoom,TRANS[wk]||0);gl.uniform1f(U.uPass,warm&1);
+    gl.uniform1f(U.uT,wk+.5);gl.uniform1f(U.uZoom,TRANS[wk]||0);gl.uniform1f(U.uZoom2,TRANS2[wk]||0);gl.uniform1f(U.uVia,VIA[wk]||0);gl.uniform1f(U.uPass,warm&1);
     gl.drawArrays(gl.POINTS,0,N);
     gl.colorMask(true,true,true,true);
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.3 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.4 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
