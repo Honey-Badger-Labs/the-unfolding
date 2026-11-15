@@ -32,6 +32,9 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:
 .mark,.clock{text-shadow:0 0 6px var(--void),0 0 2px var(--void)}
 .clock{position:fixed;top:36px;left:16px;right:16px;display:flex;flex-direction:column;gap:2px;pointer-events:none}
 #clock{color:var(--ink);font-size:12px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+#fromnow{color:var(--ink);font-size:11px;letter-spacing:.04em;opacity:.8;font-variant-numeric:tabular-nums}
+#fromnow:empty{display:none}
+.mark span,.clock span{white-space:nowrap}
 #rate{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-variant-numeric:tabular-nums}
 .hud{position:fixed;left:0;right:0;bottom:0;padding:44px 16px 16px;background:linear-gradient(to top,rgba(4,4,11,.92) 35%,rgba(4,4,11,0));display:flex;flex-direction:column;gap:12px}
 .inner{width:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
@@ -88,19 +91,30 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 .src a:hover{color:var(--gold)}
 .fail{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center}
 @media (max-width:760px){.ticks i:not(:first-child):not(:last-child){display:none}}
-@media (max-width:520px){.note{font-size:11px}}
+#info{display:none}
+/* phones: the picture comes first. Heading, label and era only; Info opens the note and sources */
+@media (max-width:600px){
+  #fps,#q{display:none}
+  #info{display:inline-block}
+  .read:not(.open) .note,.read:not(.open) .src,.read:not(.open) .more{display:none}
+  .note,.meta{font-size:11px}
+  h1{font-size:23px}
+  button{min-width:54px;padding:9px 8px}
+  .ctl{gap:8px}
+  .hud{padding-top:28px}
+}
 </style>
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.0</span></div>
-<div class="clock"><span id="clock"></span><span id="rate"></span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.1</span></div>
+<div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
   <div class="inner">
     <div class="read in" id="read">
       <div class="row"><h1 id="title">The Unfolding</h1><span class="chip model" id="chip">Model-dependent</span></div>
-      <div class="meta row"><span id="era">13.8 billion years</span><span aria-hidden="true">/</span><span id="scale">one universe</span></div>
+      <div class="meta row"><span id="era">13.8 billion years</span><span class="more" aria-hidden="true">/</span><span class="more" id="scale">one universe</span></div>
       <p class="note" id="note">Loading the Atlas.</p>
       <p class="src" id="src"></p>
     </div>
@@ -111,6 +125,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
         <div class="ticks" id="ticks"></div>
       </div>
       <button id="snd" type="button" aria-pressed="false" title="Sound (M)">Sound</button>
+      <button id="info" type="button" aria-pressed="false" title="Show or hide the stage notes">Info</button>
       <button id="q" type="button" title="Particle count">120k</button>
     </div>
   </div>
@@ -293,13 +308,13 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
   float puff=mix(10.,1.,q);                    // and thick
   float scatter=nq*nq;                         // and has no arms yet
   S=.02; A=.5;
-  if(kind<.17){
+  if(kind<.2){
     // bulge and bar: dense, bright, old and warm; a big glowing cloud before it settles
     vec3 q3=g*vec3(.46,.17,.15);
     q3.xy=rot(barA+gsp*1.4)*q3.xy;
-    vec3 bul=g*.2;
+    vec3 bul=g*.27;
     P=mix(bul,q3,step(.45,r2.x))*mix(2.2,1.,q);
-    C=mix(vec3(1.,.72,.42),vec3(1.,.9,.74),r2.x)*1.05; A=.6;
+    C=mix(vec3(1.,.78,.5),vec3(1.,.93,.8),r2.x)*1.2; A=.6;
   }else if(kind<.39){
     // the old disc: smooth and dim, densest in the middle, with dark lanes along the inner edges of the main arms
     float r=min(REDGE,.12-.62*log(1.-.96*r2.x));
@@ -308,7 +323,7 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     C=vec3(1.,.86,.66)*mix(.6,.35,smoothstep(.5,2.6,r));
     float ph=mod(th-barA-K*log(max(r,R0)/R0),PI);
     float lane=smoothstep(.02,.1,ph)*(1.-smoothstep(.28,.42,ph))*smoothstep(R0,R0+.2,r)*q;
-    A=.45*(1.-.85*lane);
+    A=.45*(1.-.93*lane);
     P.xy*=spread;
   }else{
     // spiral arms: two major off the bar ends, two minor between; thick and bright near the centre,
@@ -333,11 +348,11 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     float rr=r+g.y*mix(.05,.14,cloud)*mix(1.4,.6,edge);
     P=vec3(rr*cos(th),rr*sin(th),g.z*mix(.03,.065,cloud)*mix(1.6,.7,edge)*puff);
     P.xy*=spread;
-    vec3 young=mix(vec3(.55,.7,1.15),vec3(.85,.9,1.),r2.x);
+    vec3 young=mix(vec3(.62,.58,1.2),vec3(.85,.85,1.05),r2.x);
     vec3 older=vec3(1.,.86,.66);
     float fade=mix(1.15,.42,edge);
     C=mix(older,young,smoothstep(.15,.7,edge))*(.55+.5*r3.y)*mix(.72,1.,major)*fade;
-    if(cloud>.5){C=mix(vec3(.45,.55,1.),vec3(.9,.45,.75),r3.y)*mix(.45,.6,major)*fade;S=.055;A=.16;}
+    if(cloud>.5){C=mix(vec3(.5,.45,1.05),vec3(.95,.45,.8),r3.y)*mix(.45,.6,major)*fade;S=.055;A=.16;}
     if(knot>.5){C=vec3(1.25,.38,.6)*mix(1.,.7,edge);S=.018;A=.6*q;}
   }
   // the forming galaxy glows pink with gas
@@ -447,7 +462,9 @@ void nursery(out vec3 P,out vec3 C,out float S,out float A){
     float hy=(P.y+1.75)/3.5;
     float ox=smoothstep(.45,1.,hy+.3*sin(P.x*1.1+P.z*2.3)+.25*(r2.x-.5));
     C=mix(vec3(1.3,.14,.2),vec3(.2,1.,.55),ox);
-    C=mix(C,vec3(.8,.06,.1),smoothstep(.6,1.,sin(P.x*3.7+P.y*2.9)*.5+.5)*.35*(1.-ox));
+    C=mix(C,vec3(1.05,.5,.12),smoothstep(.55,1.,sin(P.x*3.7+P.y*2.9)*.5+.5)*.5*(1.-ox));   // amber dust
+    vec2 hs=(P.xy-vec2(.4,1.1))*vec2(.55,.95);
+    C=mix(C,vec3(.3,.5,1.3),.75*exp(-dot(hs,hs)));                                          // blue glow round the hot stars
     float d=pillarDist(P.xy);
     float rim=exp(-pow((d-1.)*3.,2.));
     C=mix(C,vec3(1.2,.8,.4),rim*.5)*(.1+.85*lit)*(1.+1.2*rim);
@@ -944,6 +961,7 @@ function years(y){
   if(y<1e9){var m=y/1e6;return (m<10?m.toFixed(1):Math.round(m))+" million years";}
   var b=y/1e9;return (b<10?b.toFixed(2):b.toFixed(1))+" billion years";
 }
+var fnEl=document.getElementById("fromnow"),fnShown="";
 var clockEl=document.getElementById("clock"),rateEl=document.getElementById("rate");
 var prevClock=0,rate=0,clockShown="",rateShown="",clockTick=0;
 function updateClock(dt){
@@ -953,7 +971,8 @@ function updateClock(dt){
   clockTick+=dt;if(clockTick<.12)return;clockTick=0;
   if(!CLOCK.length)return;
   var txt=c<1?"The beginning":years(c)+" after the Big Bang";
-  if(c>NOW+1e6)txt+=" \u00b7 "+years(c-NOW)+" from now";
+  var fn=c>NOW+1e6?years(c-NOW)+" from now":"";
+  if(fn!==fnShown){fnEl.textContent=fn;fnShown=fn;}
   var near=Math.round(T),resting=Math.abs(T-near)<.015,rt="";
   if(playing&&phase==="moving")rt=rate<1?"time almost still":"time passing: "+years(rate)+" per second";
   else if(resting)rt=TEMPO[near]||"time held";
@@ -966,7 +985,7 @@ var liftTarget=0; // how far the scene sits above the text panel; changes only o
 function liftFromHud(){liftTarget=Math.min(.45,Math.max(0,(hudEl.offsetHeight-44)/Math.max(1,canvas.clientHeight)));}
 function reserveText(){
   if(!EVENTS.length){liftFromHud();return;}
-  var m=read.cloneNode(true);m.removeAttribute("id");m.className="read in measure";
+  var m=read.cloneNode(true);m.removeAttribute("id");m.className="read in measure"+(read.classList.contains("open")?" open":"");
   m.querySelectorAll("[id]").forEach(function(el){el.removeAttribute("id");});
   read.parentNode.style.position="relative";read.parentNode.appendChild(m);
   var tallest=0,parts=m.children;
@@ -1106,6 +1125,12 @@ function toggle(){
   }else phase="moving";
 }
 playBtn.addEventListener("click",toggle);
+var infoBtn=document.getElementById("info");
+infoBtn.addEventListener("click",function(){
+  var open=read.classList.toggle("open");
+  infoBtn.textContent=open?"Less":"Info";infoBtn.setAttribute("aria-pressed",String(open));
+  reserveText();
+});
 // sound starts on a tap, since browsers only allow audio after one
 var sndBtn=document.getElementById("snd"),AC=null,SND=null,soundOn=false,ended=false;
 // after the journey ends the sound fades away; any interaction brings it back
@@ -1214,7 +1239,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.0 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.1 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
