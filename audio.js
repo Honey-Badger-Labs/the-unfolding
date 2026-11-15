@@ -75,7 +75,7 @@
     // per-voice trims, measured with tests/audio-levels.html so every stage sits near the same loudness
     // (the deepest voices sit a little higher, since the ear hears bass as quieter)
     var TRIM = { beginning: 0.5, fusion: 1.6, jupiter: 1.4, energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.9,
-                 nursery: 2.24, collapse: 0.6, star: 1.33, worlds: 2.6, giant: 0.85, eye: 1.41 };
+                 nursery: 2.24, collapse: 0.6, star: 1.33, moon: 0.85, worlds: 2.6, giant: 0.85, eye: 1.41 };
     var voices = [];
     function voice(name, build) {
       var trim = gain(TRIM[name] || 1); trim.connect(mix);
@@ -236,6 +236,22 @@
       chain(noise(), bp, gain(0.1), o);
       var bp2 = filt("bandpass", 1400, 4); lfo(0.05, 500, bp2.frequency);
       chain(noise(), bp2, gain(0.04), o);
+    });
+
+    // the Moon is born: a slow tolling over a low rumble of molten rock
+    voice("moon", function (o, v) {
+      chain(noise(), filt("lowpass", 160, 1.5), gain(0.5), o);
+      var lp = filt("lowpass", 260, 4); lfo(0.11, 90, lp.frequency);
+      chain(osc("sawtooth", hz(-2)), lp, gain(0.1), o);
+      chain(osc("sine", hz(-14)), gain(0.3), o);
+      v.tick = function (t, horizon) {
+        while (v.next < t + horizon) {
+          if (v.next < t) v.next = t;
+          pluck(o, hz(10), v.next, 3.2, 0.09, "triangle");
+          pluck(o, hz(17), v.next, 2.2, 0.03, "sine");
+          v.next += 3.4;
+        }
+      };
     });
 
     // worlds form: a slow music-box arpeggio over a soft pad, like orbits ticking round

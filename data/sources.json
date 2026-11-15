@@ -182,6 +182,27 @@
       "publisher": "NASA/IPAC Extragalactic Database",
       "url": "https://ned.ipac.caltech.edu/level5/ESSAYS/Carlberg/carlberg.html",
       "supports": "Spiral arms trail the rotation; inner stars overtake the arm pattern and outer stars fall behind it; dust lanes lie on the inner side of the arms."
+    },
+    {
+      "id": "astronomy-giant-impact",
+      "title": "Giant Impact Hypothesis: An evolving legacy of Apollo",
+      "publisher": "Astronomy magazine",
+      "url": "https://www.astronomy.com/science/giant-impact-hypothesis-an-evolving-legacy-of-apollo/",
+      "supports": "Late in its formation the Earth was struck obliquely by a planet-sized body, Theia; the debris left in orbit gathered into the Moon, and the blow can explain the Earth's fast early spin."
+    },
+    {
+      "id": "astronomy-moon-hours",
+      "title": "The Moon may have formed just hours after giant impact",
+      "publisher": "Astronomy magazine",
+      "url": "https://www.astronomy.com/science/the-moon-may-have-formed-just-hours-after-giant-impact/",
+      "supports": "The traditional picture has the Moon gathering gradually from a debris disc; high-resolution simulations (Kegerreis and others, 2022) show it could instead have formed within hours."
+    },
+    {
+      "id": "nasa-saturn-rings",
+      "title": "Saturn's Rings: Young and Ephemeral, Three NASA Ames Studies Say",
+      "publisher": "NASA",
+      "url": "https://www.nasa.gov/solar-system/saturns-rings-young-and-ephemeral-three-nasa-ames-studies-say",
+      "supports": "Evidence from the Cassini mission that Saturn's rings are a relatively recent addition and may last only a few hundred million years more."
     }
   ]
 }

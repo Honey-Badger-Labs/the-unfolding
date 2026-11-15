@@ -2,7 +2,7 @@
 //
 //   npm i --no-save puppeteer-core @fontsource/cormorant-garamond @fontsource/ibm-plex-mono
 //   npm run serve                      (in another terminal)
-//   node tools/film.mjs --out film.mp4 [--width 1920 --height 1080 --fps 30 --from 0 --to 14 --particles 240]
+//   node tools/film.mjs --out film.mp4 [--width 1920 --height 1080 --fps 30 --from 0 --to 15 --particles 240]
 //
 // Needs Chrome and ffmpeg. Nothing here runs in real time: the page's clock is replaced by one that this
 // script advances by exactly one frame at a time, so the film has no dropped frames however slow the machine.

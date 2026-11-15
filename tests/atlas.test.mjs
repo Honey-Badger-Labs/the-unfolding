@@ -83,10 +83,10 @@ test("every stage but the last says how the journey leaves it", () => {
     assert.ok(t && ["morph", "zoom-in", "zoom-out", "out-in"].includes(t.type), `${e.id} needs a transition of morph, zoom-in, zoom-out or out-in`);
     if (t.type !== "morph") assert.ok(t.depth > 0 && t.depth < 6, `${e.id} zoom depth should be between 0 and 6`);
     if (t.type === "out-in") {
-      // pull back to a larger scene, then dive into it: the larger scene must be a real, earlier stage
+      // pull back to a larger scene, then dive into it: the larger scene must be another real stage
       assert.ok(t.depth2 > 0 && t.depth2 < 6, `${e.id} second zoom depth should be between 0 and 6`);
       const via = events.find((v) => v.id === t.via);
-      assert.ok(via && via.stage < e.stage, `${e.id} must pull back to an earlier stage, not "${t.via}"`);
+      assert.ok(via && via.stage !== e.stage && via.stage !== e.stage + 1, `${e.id} must pull back to a third stage, not "${t.via}"`);
     }
   });
 });

@@ -1,6 +1,6 @@
 {
-  "version": "0.4.0",
-  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, or a zoom in or out by 'depth' e-folds of scale. 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
+  "version": "0.5.0",
+  "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, a zoom in or out by 'depth' e-folds of scale, or 'out-in' (pull back to the 'via' stage, then dive by 'depth2'). 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
   "events": [
     {
       "id": "the-beginning",
@@ -184,7 +184,7 @@
       "label": "observed",
       "era": "at the centre of nearly every large galaxy",
       "scale": "ours fits inside Mercury's orbit; the largest outsize the solar system",
-      "note": "A supermassive black hole. Its gravity bends light: the far side of the disc arches over the shadow, and the side turning towards us shines brighter. This view is procedural.",
+      "note": "A supermassive black hole: a ring of light round its shadow, a disc of hot gas, and stars whipping round it. The side of the disc turning towards us shines brighter. This view is procedural.",
       "age": null,
       "clock": 9000000000,
       "sources": [
@@ -328,7 +328,7 @@
       "label": "model",
       "era": "while the young disc is still rich in gas",
       "scale": "about 11 Earths wide",
-      "note": "Beyond the frost line a giant forms while gas is still plentiful. Its ten-hour spin drives jet streams that pull the clouds into belts and zones flowing opposite ways, round a storm wider than Earth.",
+      "note": "Beyond the frost line giants form while gas is plentiful. Jupiter's ten-hour spin pulls its clouds into belts and zones flowing opposite ways. Saturn is shown with today's rings, which may be young.",
       "age": [
         9201000000,
         9210000000
@@ -338,7 +338,8 @@
       "sources": [
         "nasa-jupiter-facts",
         "jpl-juno-jupiter",
-        "skyatnight-jupiter"
+        "skyatnight-jupiter",
+        "nasa-saturn-rings"
       ],
       "camera": {
         "dist": 5.8,
@@ -347,14 +348,47 @@
       },
       "sound": "a deep organ-like fifth that beats slowly, with banded winds blowing across it",
       "transition": {
-        "type": "zoom-out",
+        "type": "out-in",
         "depth": 3.3,
+        "via": "worlds-form",
+        "depth2": 3.5,
+        "pace": 0.45
+      }
+    },
+    {
+      "id": "moon-forms",
+      "stage": 12,
+      "tick": "Moon",
+      "title": "The Moon is born",
+      "label": "model",
+      "era": "about 4.5 billion years ago, as the Earth finished forming",
+      "scale": "Earth, and an impactor the size of Mars",
+      "note": "A Mars-sized world, Theia, strikes the young Earth a glancing blow. Molten debris circles the planet and gathers into the Moon: in hours or over centuries, models differ. Distances are compressed.",
+      "age": [
+        9230000000,
+        9300000000
+      ],
+      "clock": 9250000000,
+      "tempo": "hours at first, then years, each second",
+      "sources": [
+        "astronomy-giant-impact",
+        "astronomy-moon-hours"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 3.0,
+        "fitH": 1.9
+      },
+      "sound": "a slow tolling over a low rumble of molten rock",
+      "transition": {
+        "type": "zoom-out",
+        "depth": 3.5,
         "pace": 0.6
       }
     },
     {
       "id": "worlds-form",
-      "stage": 12,
+      "stage": 13,
       "tick": "Worlds",
       "title": "Worlds form",
       "label": "model",
@@ -383,7 +417,7 @@
     },
     {
       "id": "red-giant",
-      "stage": 13,
+      "stage": 14,
       "tick": "Giant",
       "title": "The star sheds its shell",
       "label": "model",
@@ -414,7 +448,7 @@
     },
     {
       "id": "nebula-eye",
-      "stage": 14,
+      "stage": 15,
       "tick": "Eye",
       "title": "The universe looks back",
       "label": "observed",

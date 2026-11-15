@@ -107,7 +107,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.4</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.5</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -140,17 +140,19 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 var VS=`#version 300 es
 precision highp float;
 layout(location=0) in vec4 aSeed;
-uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom,uSpin,uZoom2,uVia,uGrow;
+uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom,uSpin,uZoom2,uVia,uGrow,uMoon;
 uniform vec2 uField;
 out vec3 vCol;
 out float vA;
 const float PI=3.14159265;
 const float TAU=6.2831853;
-const int ENERGY=1,WEB=2,CLUSTER=3,QUASAR=4,GALAXY=5,HEART=6,NURSERY=7,COLLAPSE=8,FUSION=9,STAR=10,JUPITER=11,WORLDS=12,GIANT=13;
+const int ENERGY=1,WEB=2,CLUSTER=3,QUASAR=4,GALAXY=5,HEART=6,NURSERY=7,COLLAPSE=8,FUSION=9,STAR=10,JUPITER=11,MOON=12,WORLDS=13,GIANT=14;
 // the galaxy in the protocluster that the camera flies into
 const vec3 FC=vec3(.55,-.32,.35);
 // a planetary system like ours: four small rocky worlds, then giants beyond the frost line
 const float PR[8]=float[8](.3,.42,.56,.72,1.2,1.62,2.05,2.42);
+// where each planet starts on its orbit (a table, so every part of the shader agrees to the last bit)
+const float PH[8]=float[8](1.3,4.1,2.4,5.6,3.6,.6,4.9,2.);
 const float PS[8]=float[8](.008,.013,.014,.010,.05,.042,.028,.027);
 const vec3 PC[8]=vec3[8](vec3(.6,.55,.5),vec3(.95,.8,.5),vec3(.3,.55,1.),vec3(.9,.4,.25),vec3(.9,.7,.5),vec3(.95,.85,.6),vec3(.6,.9,.95),vec3(.3,.45,1.));
 vec3 s,r2,r3,g; float w;
@@ -165,6 +167,11 @@ float gsp=0.;  // galaxy: extra spin as we dive to its centre, fastest near the 
 float kq=0.;   // nursery: how far the knot we dive into has contracted
 float jq=1.;   // gas giant: 0 a hot young planet still drawing gas from its disc, 1 formed
 float wig=0.;  // set by web(): the order in which its matter first lights up (0 the nodes, 1 mid-filament)
+float gf=0.;   // worlds: 1 while the two giants are already formed and the rocky worlds are still gathering
+float sat=0.;  // worlds: how close the camera is to the ringed giant (it is drawn in more detail close up)
+float dv=1.;   // worlds: how visible the loose dust is (its particles are lent to the ringed giant's close-up)
+float wm=1.;   // worlds: how much the camera magnifies it (the star is drawn larger and softer close up)
+float jv=1.;   // worlds: how visible its own giant planet is (hidden while the close-up of it is still on screen)
 float keep=0.; // set by worlds(): 1 for the planet that survives the red giant (Mars)
 vec3 hash33(vec3 p){
   p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6)));
@@ -403,23 +410,6 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
   P.yz=rot(1.05)*P.yz;
 }
 
-// Gravitational lensing by the black hole, for a distant observer (weak-field point lens).
-// A light ray passing at impact parameter b is bent by an angle 2 rs / b, so a source at depth d behind the
-// hole, offset beta from the line of sight, satisfies  beta = b - 2 rs d / b.  Its two images sit at
-//   b = (beta +- sqrt(beta^2 + 8 rs d)) / 2
-// The first is pushed outward on the same side: the far side of the disc arches over the shadow.
-// The second appears on the opposite side; in the true strong field such images pile up at the photon ring.
-const float RS=.231;          // Schwarzschild radius; the shadow is sqrt(27)/2 times this, 0.6
-vec3 lensed(vec3 P,bool second){
-  float d=-P.z;
-  if(d<=0.)return P;          // in front of the hole: seen directly
-  float beta=length(P.xy);
-  vec2 dir=beta>1e-4?P.xy/beta:vec2(0.,1.);
-  float root=sqrt(beta*beta+8.*RS*d);
-  float b=second?-max(.5*(root-beta),.635):.5*(beta+root);
-  return vec3(dir*b,P.z);
-}
-
 void heart(out vec3 P,out vec3 C,out float S,out float A){
   // a supermassive black hole: its ring of light, its disc, and stars whipping round it
   float kind=r3.z;
@@ -444,13 +434,7 @@ void heart(out vec3 P,out vec3 C,out float S,out float A){
     P.yz=rot(1.3)*P.yz;
     C=mix(vec3(1.,.9,.7),vec3(.9,.22,.07),smoothstep(.95,2.4,r));
     C*=(.3+.7*(.5-.5*cos(th)))*(.7+.3*sin(r*18.+r2.x));
-    S=.02; A=.75;
-    // light from the far side is bent round the hole: over the top, and a fainter image underneath
-    if(P.z<0.){
-      bool second=r3.x<.22;
-      P=lensed(P,second);
-      if(second){C*=.55;S=.016;}
-    }
+    S=.02; A=.55;
   }else{
     float id=floor(s.x*14.);
     vec3 h=hash33(vec3(id,4.,8.));
@@ -461,7 +445,6 @@ void heart(out vec3 P,out vec3 C,out float S,out float A){
     P=vec3(r*cos(M+om),r*sin(M+om),0.);
     P.yz=rot(hash13(vec3(id,5.,6.))*PI)*P.yz;
     P+=g*.006;
-    P=lensed(P,false);                                   // a star passing behind is displaced round the shadow
     C=mix(vec3(.6,.75,1.),vec3(1.,.8,.55),h.y)*.8; S=.016; A=.45;
   }
 }
@@ -663,8 +646,17 @@ void fusion(out vec3 P,out vec3 C,out float S,out float A){
 vec3 giantPlanetPos(){
   // where the system's largest planet is on its orbit, in the plane of the system (before its tilt)
   float pr=PR[4];
-  float ph=hash13(vec3(4.,7.,3.))*TAU+uTime*.18/(pow(pr,1.5)+.05);
+  float ph=PH[4]+uTime*.18/(pow(pr,1.5)+.05);
   return vec3(pr*cos(ph),pr*sin(ph),0.);
+}
+
+vec3 planetPos(int i){
+  // where a planet is on its orbit, as seen (the system's plane is tilted towards us)
+  float pr=PR[i];
+  float ph=PH[i]+uTime*.18/(pow(pr,1.5)+.05);
+  vec3 p=vec3(pr*cos(ph),pr*sin(ph),0.);
+  p.yz=rot(1.12)*p.yz;
+  return p;
 }
 
 void youngStar(out vec3 P,out vec3 C,out float S,out float A){
@@ -753,52 +745,184 @@ void worlds(out vec3 P,out vec3 C,out float S,out float A){
   // the star at the centre settles and brightens
   float q=wq;
   keep=0.;
-  int ip=int(min(floor(s.x*8.),7.));
+  float kind=r2.x;
+  // close to the ringed giant, most of the system's loose dust is out of sight: those particles draw the planet
+  // and its rings instead, so that it holds up as well as the stage before it
+  bool close=sat>0.&&kind>=.56&&r3.z<.8;
+  int ip=close?5:int(min(floor(s.x*8.),7.));
   float pr=PR[ip];
-  float hp=hash13(vec3(float(ip),7.,3.));
   float om=.18/(pow(pr,1.5)+.05);
   float a=s.y*TAU+uTime*om;
-  float ph=hp*TAU+uTime*om;                 // where this ring's planet is
+  float ph=PH[ip]+uTime*om;                 // where this ring's planet is
   float dw=.09+.05*pr;                      // the dust ring's width
   vec3 dustC=mix(vec3(1.,.74,.3),vec3(.85,.4,.18),smoothstep(.3,1.6,pr))*mix(1.05,.6,q);
-  float kind=r2.x;
+  float qp=(ip==4||ip==5)?max(q,gf):q;      // the giants form first, while gas is plentiful
   S=.014; A=.6;
-  if(kind<.42){
+  if(kind<.42||close){
     // material that becomes the planet: arrivals are staggered, so the clump grows over time
-    float arrive=smoothstep(r3.x*.75,r3.x*.75+.25,q);
+    float arrive=close?1.:smoothstep(r3.x*.75,r3.x*.75+.25,qp);
     float da=mod(a-ph+PI,TAU)-PI;
     float ang=ph+da*(1.-arrive);
     float rad=pr+g.x*dw*(1.-arrive);
-    P=vec3(rad*cos(ang),rad*sin(ang),g.z*.03*(1.-arrive))+g*PS[ip]*arrive;
-    C=mix(dustC,PC[ip]*(.6+.5*r3.x),arrive);
-    S=mix(.016,.018,arrive);
-    A=mix(.5,max(.012,.05*pow(PS[ip]/.05,2.)),pow(arrive,.6));
+    vec3 off=g*PS[ip];
+    vec3 pc=PC[ip]*(.6+.5*r3.x);
+    float ps=.018, pa=max(.012,.05*pow(PS[ip]/.05,2.));
+    if(ip==5){
+      // the ringed giant, like Saturn: a banded, flattened globe, and rings of ice in the plane of its equator
+      // (drawn in the plane of the system). Ring radii follow Saturn's: the faint C ring, the bright B ring,
+      // the dark Cassini division, the A ring with its narrow Encke gap
+      const float RP=.039;
+      vec3 sun=-normalize(vec3(cos(ph),sin(ph),0.));
+      float cl=close?sat:0.;
+      if(r3.y<.5){
+        vec3 d=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+        d.z=abs(d.z);                                  // the face towards us
+        vec3 qn=d; qn.yz=rot(-1.12)*qn.yz;             // the planet's own frame: qn.z is the spin axis
+        float lat=asin(clamp(qn.z,-1.,1.));
+        vec3 col=mix(vec3(.66,.45,.24),vec3(1.,.88,.62),smoothstep(.2,.8,.5+.5*cos(lat*14.+.7*sin(lat*5.))));
+        col=mix(col,vec3(.9,.7,.42),.3*exp(-lat*lat*40.));
+        col=mix(col,vec3(.62,.64,.56),smoothstep(1.,1.4,abs(lat)));
+        off=qn*RP; off.z*=.9;                          // flattened by its spin
+        vec3 sv=sun; sv.yz=rot(1.12)*sv.yz;
+        float day=smoothstep(-.3,.45,dot(d,normalize(sv+vec3(0.,0.,1.1))));
+        pc=col*mix(.4,1.,pow(d.z,.6))*mix(.1,1.,day);
+        ps=mix(.018,.075,cl); pa=mix(.035,.3*max(d.z,.12),cl);
+      }else{
+        float x=mix(1.24,2.27,pow(fract(r3.y*2.),.85));
+        float br=x<1.53?.22:x<1.95?1.:x<2.02?.04:(abs(x-2.21)<.012?.08:.6);
+        float rt=(s.y+r2.z*7.)*TAU+uTime*.5/pow(x,1.5);
+        off=vec3(cos(rt),sin(rt),0.)*x*RP;
+        float along=dot(off,-sun);
+        if(along>0.&&length(off+sun*along)<RP*.95)br*=.06;   // the planet's shadow falls across the rings
+        pc=vec3(.97,.9,.75)*br*(.75+.25*sin(x*140.));
+        ps=mix(.012,.06,cl); pa=mix(.03,.45,cl);
+        vec3 v=off; v.yz=rot(1.12)*v.yz;
+        if(v.z<0.&&length(v.xy*vec2(1.,1.08))<RP*.97)pa=0.;  // behind the globe
+      }
+    }
+    if(ip==4)pa*=jv;
+    if(close)pa*=sat;
+    P=vec3(rad*cos(ang),rad*sin(ang),g.z*.03*(1.-arrive))+off*arrive;
+    C=mix(dustC,pc,arrive);
+    S=mix(.016,ps,arrive);
+    A=mix(.5,pa,pow(arrive,.6));
     keep=ip==3?1.:0.;
   }else if(kind<.56){
     // the ring's lane: a band of dust that thins to a faint orbit line
-    float rad=pr+g.x*dw*(1.-q)+g.x*.004*q;
-    P=vec3(rad*cos(a),rad*sin(a),g.z*.03*(1.-q));
-    C=mix(dustC,vec3(.5,.5,.58)*.16,q);
-    A=mix(.5,.6,q);
+    float rad=pr+g.x*dw*(1.-qp)+g.x*.004*qp;
+    P=vec3(rad*cos(a),rad*sin(a),g.z*.03*(1.-qp));
+    C=mix(dustC,vec3(.5,.5,.58)*.16,qp);
+    A=mix(.5,.6,qp);
   }else if(kind<.65){
     // the asteroid belt: leftovers between the rocky worlds and the giants
     float r=.94+g.x*mix(.14,.07,q);
-    P=vec3(r*cos(a),r*sin(a),g.z*.02); C=mix(dustC,vec3(.6,.5,.4)*.4,q); S=.012;
+    P=vec3(r*cos(a),r*sin(a),g.z*.02); C=mix(dustC,vec3(.6,.5,.4)*.4,q); S=.012; A*=dv;
   }else if(kind<.80){
     // the outer belt of icy leftovers
     float r=2.8+g.x*mix(.25,.14,q);
-    P=vec3(r*cos(a),r*sin(a),g.z*.05); C=mix(dustC*.7,vec3(.5,.6,.75)*.3,q); S=.012;
+    P=vec3(r*cos(a),r*sin(a),g.z*.05); C=mix(dustC*.7,vec3(.5,.6,.75)*.3,q); S=.012; A*=dv;
   }else{
     // the last of the diffuse dust, fading as the system clears
     float r=.2+2.7*sqrt(r3.y);
-    P=vec3(r*cos(a),r*sin(a),g.z*.03*(2.-q)); C=dustC*mix(.5,.12,q);
+    P=vec3(r*cos(a),r*sin(a),g.z*.03*(2.-q)); C=dustC*mix(.5,.12,q); A*=dv;
   }
-  float core=step(r2.y,.07);
+  float core=close?0.:step(r2.y,.07);
   P=mix(P,g*mix(.13,.09,q),core);
   keep*=1.-core;
   C=mix(C,vec3(1.,.95,.8)*mix(.85,1.,q),core);
-  S=mix(S,.035,core); A=mix(A,.85,core);
+  float big=clamp(wm,1.,3.);
+  S=mix(S,.035*big,core); A=mix(A,.85/pow(big,1.6),core);
   P.yz=rot(1.12)*P.yz;
+}
+
+void moonBirth(out vec3 P,out vec3 C,out float S,out float A){
+  // The giant impact. A Mars-sized world (Theia) strikes the young Earth a glancing blow; the shock crosses the
+  // planet and leaves it molten; debris is thrown into orbit, where faster inner orbits shear it into a disc;
+  // what lies inside the Roche limit rains back, and the rest gathers into the Moon.
+  // uMoon is this scene's own clock in seconds; the impact is at T0. Sizes are to scale (Theia about half of
+  // Earth's width, the Moon a quarter); the Moon's orbit is drawn about where it formed, a few Earth radii out
+  const float T0=3.2, RE=.5, RT=.26, RM=.135, RO=1.55, TILT=1.;
+  float t=uMoon, after=t-T0, hit=step(0.,after);
+  float phi=2.45;
+  vec2 rh=vec2(cos(phi),sin(phi)), tg=vec2(-rh.y,rh.x);
+  vec3 Ld=normalize(vec3(-.55,.3,.78));               // sunlight
+  float kind=r3.z;
+  float mth=1.3+.57*after;                             // where the Moon is on its orbit
+  S=.03; A=.3;
+  if(kind<.42){
+    // the Earth
+    vec3 d=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+    d.z=abs(d.z);
+    vec3 qn=d; qn.yz=rot(-TILT)*qn.yz;                 // the frame of the collision: qn.z is the spin axis
+    float lat=asin(clamp(qn.z,-1.,1.));
+    float lon=atan(qn.y,qn.x)-t*.08-max(after,0.)*.22; // the blow leaves the planet spinning fast
+    float tex=sin(lon*3.+2.*sin(lat*4.))*sin(lat*5.+lon)+.5*sin(lon*7.-lat*9.);
+    float crack=smoothstep(.45,.9,.5+.4*tex);
+    float day=smoothstep(-.3,.5,dot(d,Ld));
+    vec3 young=vec3(.42,.34,.3)*(.25+.75*day)*(1.-crack)+vec3(.95,.3,.07)*crack;   // thin crust over magma
+    float ang=acos(clamp(dot(qn,vec3(rh,0.)),-1.,1.));
+    float ta=after-ang/1.3;                            // the shock takes a few seconds to cross the globe
+    float molten=smoothstep(0.,.5,ta);
+    vec3 hot=mix(vec3(1.35,1.1,.8),vec3(1.15,.48,.13),smoothstep(0.,5.,ta))*(.8+.2*tex);
+    vec3 cooled=mix(vec3(1.,.36,.08),vec3(.2,.1,.08)*(.4+.6*day),1.-crack);
+    hot=mix(hot,cooled,smoothstep(9.,24.,ta));
+    C=mix(young,hot,molten)*mix(.45,1.,pow(d.z,.6));
+    C+=vec3(1.3,1.2,1.)*hit*exp(-after*1.4)*exp(-ang*ang*1.6);
+    P=d*RE*(1.+.03*molten+.006*g.x);
+    S=.045; A=.16*max(d.z,.12);
+  }else if(kind<.54){
+    // Theia
+    vec3 d=normalize(hash33(s*23.1+w*3.7)-.5+vec3(1e-4));
+    d.z=abs(d.z);
+    vec2 vel=normalize(-rh*.68+tg*.73);                // it strikes at about 45 degrees
+    float back=max(-after,0.);
+    vec2 c2=rh*(RE+RT*.5)-vel*(1.05*back+.05*back*back)+vel*RT*1.5*(1.-exp(-max(after,0.)*3.));
+    vec3 c=vec3(c2,0.); c.yz=rot(TILT)*c.yz;
+    float day=smoothstep(-.3,.5,dot(d,Ld));
+    float tex=sin(d.x*9.+3.*d.y)*sin(d.y*11.-2.*d.z);
+    C=mix(vec3(.5,.4,.34)*(.75+.25*tex)*(.2+.8*day),vec3(1.3,1.,.7),smoothstep(-.25,.15,after))*mix(.45,1.,pow(d.z,.6));
+    P=c+d*RT*(1.-.6*smoothstep(0.,.6,after));
+    S=.04; A=.16*max(d.z,.12)*(1.-smoothstep(.05,.8,after));
+  }else if(kind<.94){
+    // the debris
+    float ta=after-r3.x*.5;
+    float rf=.62+1.5*pow(r2.x,1.4);
+    float e1=1.-exp(-max(ta,0.)/(.5+.6*r2.y));
+    float r=mix(RE*1.02,rf,e1);
+    float th=phi+g.x*.2+.7*e1+1.1*max(ta,0.)/pow(rf,1.5);    // inner orbits run ahead: the plume winds into a disc
+    float zh=g.z*.05*r*(1.+2.*exp(-max(ta,0.)));
+    C=mix(vec3(1.3,1.1,.8),vec3(1.,.4,.12),smoothstep(0.,3.,ta))*mix(1.,.5,smoothstep(3.,9.,ta))*(.6+.6*r3.y);
+    S=.022; A=.3*step(0.,ta);
+    vec3 mo=vec3(0.);
+    if(r2.z<.3&&rf>1.){
+      // beyond the Roche limit the debris can hold together: it gathers into the Moon
+      float tm=4.+5.*r3.y;
+      float arrive=smoothstep(tm,tm+2.5,ta);
+      float da=mod(th-mth+PI,TAU)-PI;
+      th=mth+da*(1.-arrive); r=mix(r,RO,arrive); zh*=1.-arrive;
+      vec3 dm=normalize(hash33(s*31.7+w*2.3)-.5+vec3(1e-4));
+      dm.z=abs(dm.z);
+      float day=smoothstep(-.3,.5,dot(dm,Ld));
+      float mtex=sin(dm.x*13.+4.*dm.y)*sin(dm.y*15.-3.*dm.x);
+      vec3 mc=mix(vec3(1.2,.62,.24),vec3(.66,.64,.62)*(.75+.25*mtex)*(.12+.88*day),smoothstep(11.,24.,after));
+      C=mix(C,mc*mix(.45,1.,pow(dm.z,.6)),arrive);
+      S=mix(S,.032,arrive); A=mix(A,.07*max(dm.z,.12),arrive);
+      mo=dm*RM*arrive;
+    }else{
+      // inside it, or left over: the debris rains back onto the Earth or thins away
+      float tf=5.+9.*r3.y;
+      float fall=smoothstep(tf,tf+4.,ta);
+      r=mix(r,rf<1.?RE*.98:r,fall); A*=1.-fall;
+    }
+    P=vec3(r*cos(th),r*sin(th),zh);
+    P.yz=rot(TILT)*P.yz;
+    P+=mo;
+    if(P.z<0.&&length(P.xy)<RE)A=0.;                   // hidden behind the Earth
+  }else{
+    // far stars
+    P=vec3((r2.xy-.5)*vec2(11.,7.),-2.-3.*r3.x);
+    C=mix(vec3(.6,.7,1.),vec3(1.,.85,.7),r3.y)*.5; S=.012; A=.3;
+  }
 }
 
 void redGiant(out vec3 P,out vec3 C,out float S,out float A){
@@ -827,7 +951,7 @@ void redGiant(out vec3 P,out vec3 C,out float S,out float A){
     S=.024; A=.4*gsh;
     if(r3.y<.012){
       // Mars survives, scorched, just outside the star (same orbit and phase as in the worlds stage)
-      float mph=hash13(vec3(3.,7.,3.))*TAU+uTime*.18/(pow(PR[3],1.5)+.05);
+      float mph=PH[3]+uTime*.18/(pow(PR[3],1.5)+.05);
       P=vec3(1.67*cos(mph),1.67*sin(mph),0.)+g*.023;
       P.yz=rot(1.12)*P.yz;
       C=PC[3]*.8; S=.018; A=.1*gsh;
@@ -887,6 +1011,7 @@ void shape(int k,out vec3 P,out vec3 C,out float S,out float A){
   else if(k==FUSION)fusion(P,C,S,A);
   else if(k==STAR)youngStar(P,C,S,A);
   else if(k==JUPITER)jupiter(P,C,S,A);
+  else if(k==MOON)moonBirth(P,C,S,A);
   else if(k==WORLDS)worlds(P,C,S,A);
   else if(k==GIANT)redGiant(P,C,S,A);
   else nebulaEye(P,C,S,A);
@@ -928,8 +1053,23 @@ void main(){
   float zr=z-.09*sin(TAU*z);                     // linger at the turning point
   bool outw=zr<.5;
   float za=smoothstep(0.,1.,clamp(zr*2.,0.,1.)), zb=smoothstep(0.,1.,clamp(zr*2.-1.,0.,1.));
+  // Jupiter to the Moon's birth: the camera's path through the young system. It leaves the giant, swings past
+  // its ringed neighbour, pulls back until every orbit is in view, then dives to the third world.
+  // jc is where the camera looks and jlm the natural log of its magnification, in the system's own coordinates
+  vec3 jc=vec3(0.),jp=vec3(0.),ep=vec3(0.); float jlm=0., ju=clamp(zr*2.,0.,1.);
   if(outin){
     ia=outw?(first?k:mid):(first?mid:k+1);
+    if(k==JUPITER){
+      jp=planetPos(4); ep=planetPos(2);
+      float L0=log(.88);
+      float hop=smoothstep(.03,.27,ju);          // the crossing from one giant to the next: back a little, then in again
+      jlm=outw?mix(abs(uZoom)-1.7*sin(PI*hop),L0,smoothstep(.66,1.,ju)):mix(L0,uZoom2,zb);
+      jc=outw?mix(mix(jp,planetPos(5),hop),vec3(0.),smoothstep(.68,.96,ju)):ep*smoothstep(.5,.75,zr);
+      if(ia==mid){
+        wq=.8*smoothstep(.1,.5,zr)+.2*smoothstep(.5,1.,zr);   // the rocky worlds are still gathering
+        gf=1.; sat=outw?smoothstep(1.9,2.6,jlm):0.; dv=outw?1.-smoothstep(1.2,1.8,jlm):1.; jv=smoothstep(.1,.24,ju); wm=exp(jlm);
+      }
+    }
   }else if(zoom){
     ia=first?k:k+1;
     if(first){
@@ -937,9 +1077,9 @@ void main(){
       if(k==GALAXY)gsp=2.2*zs;                     // the inner galaxy whirls faster as we close in
       if(k==NURSERY)kq=zs;                         // the knot contracts under its own weight
     }
+    if(k==MOON&&!first)wm=exp(abs(uZoom)*(1.-zs));
     if(k==COLLAPSE&&!first)fq=.35*smoothstep(.55,1.,z);
     if(k==STAR&&!first)jq=smoothstep(.4,1.,z);       // the giant takes shape as we arrive
-    if(k==JUPITER&&!first)wq=smoothstep(.15,1.,z);   // as we pull back, the other worlds gather out of their rings
     if(k==FUSION){
       // first the core heats and crowds until fusion is everywhere; only then do we pull back
       if(first)fq=mix(.35,1.,smoothstep(0.,.5,z));
@@ -955,7 +1095,7 @@ void main(){
   }
   shape(ia,Pa,Ca,Sa,Aa);
   float kp=keep;
-  wfl=0.;gsp=0.;kq=0.;fq=.35;jq=1.;wq=1.;bq=1.;gr=1.;
+  wfl=0.;gsp=0.;kq=0.;fq=.35;jq=1.;wq=1.;bq=1.;gr=1.;gf=0.;sat=0.;jv=1.;dv=1.;wm=1.;
   float Rs=mix(.11,1.3,pow(zs,1.15));              // the swelling Sun's radius (worlds to red giant)
   if(two){
     if(k==WORLDS){gr=Rs/1.3;gsh=smoothstep(.74,1.,z);}
@@ -971,7 +1111,12 @@ void main(){
     vec3 home=mid==GALAXY?galaxyHome():vec3(0.);
     vec3 aim=home*smoothstep(.36,.74,zr);        // the place we will dive to drifts to the middle of the view
     float sc=M*exp(L1*(1.-za)+L2*zb);            // the size of the larger scene on screen
-    if(ia==mid){
+    if(k==JUPITER){
+      float m=exp(jlm);
+      if(ia==mid){P=(P-jc)*m;A*=outw?smoothstep(.03,.2,ju):1.-smoothstep(.55,.95,zb);}
+      else if(outw){P=(jp-jc)*m+P*exp(jlm-L1);A*=1.-smoothstep(.1,.24,ju);}
+      else{P=(ep-jc)*m+P*exp(jlm-L2);A*=smoothstep(.42,.85,zb);}
+    }else if(ia==mid){
       P=(P-aim)*sc;
       A*=outw?smoothstep(.06,.5,za):1.-smoothstep(.55,.95,zb);
     }else if(outw){
@@ -996,11 +1141,11 @@ void main(){
     }else{
       // pull back: the old scene shrinks away, the new one arrives from beyond the camera
       vec3 off=(k==HEART?vec3(-2.4,1.2,0.):vec3(0.))*zz;
-      if(k==JUPITER){
-        // pull back from the planet to its place on its orbit
-        vec3 jp=giantPlanetPos();jp.yz=rot(1.12)*jp.yz;
-        if(first){P=P*exp(-L*zz)+jp*zz;A*=mix(1.,.04,smoothstep(0.,.8,zz))*(1.-smoothstep(.88,1.,zz));}
-        else{P=(P-jp)*exp(L*(1.-zz))+jp*zz;A*=smoothstep(.05,.5,zz);}
+      if(k==MOON){
+        // pull back from the Earth and its new Moon to their place on their orbit
+        vec3 e3=planetPos(2);
+        if(first){P=P*exp(-L*zz)+e3*zz;A*=1.-smoothstep(.45,.9,zz);}
+        else{P=(P-e3)*exp(L*(1.-zz))+e3*zz;A*=smoothstep(.05,.5,zz);}
       }else if(first){P=P*exp(-L*zz)+off;A*=1.-smoothstep(.5,.95,zz);}
       else{P=P*exp(L*(1.-zz));A*=smoothstep(.05,.5,zz);}
       if(k==HEART){hc=off;hr=.6*exp(-L*zz);hw=1.-smoothstep(.5,.95,zz);}
@@ -1110,13 +1255,13 @@ function sh(type,src){
 }
 var prog=gl.createProgram();
 // the shader draws SHAPE_COUNT shapes; the Atlas must have one event per shape (tests check this)
-var SHAPE_COUNT=15, LAST=SHAPE_COUNT-1;
+var SHAPE_COUNT=16, LAST=SHAPE_COUNT-1;
 gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS.replace("__LAST__",String(LAST-1))));
 gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
 gl.linkProgram(prog);
 if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(prog));document.getElementById("fail").style.display="flex";return;}
 gl.useProgram(prog);
-var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom","uSpin","uZoom2","uVia","uGrow"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom","uSpin","uZoom2","uVia","uGrow","uMoon"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
 
 var COUNTS=[60000,120000,240000];
 var coarse=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches;
@@ -1384,6 +1529,7 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
     names[e.tick.toLowerCase()]=k;
   });
   if(names.jupiter!==undefined)JUP=names.jupiter;
+  if(names.moon!==undefined)MOONK=names.moon;
   // structure grows as time^(2/3) between the primordial energy and the web, in step with the clock
   if(CLOCK[1]>0&&CLOCK[2]>CLOCK[1])GROW=2/3*Math.log(CLOCK[2]/CLOCK[1]);
   reserveText();
@@ -1398,6 +1544,7 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
 });
 
 var GROW=4.79;
+var moonT=0,MOONK=-1; // the Moon's birth runs on its own clock: the impactor closes in as we arrive, then it plays out
 var spinT=0,JUP=-1; // the gas giant's own clock, restarted each visit so its storm is in view
 var warm=0,last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("fps");
 function frame(now){
@@ -1434,6 +1581,10 @@ function frame(now){
   gl.clear(gl.COLOR_BUFFER_BIT);
   if(JUP>=0&&Math.abs(T-JUP)<1)spinT+=dt;else spinT=0;
   gl.uniform1f(U.uSpin,spinT);
+  if(MOONK<0||T<MOONK-.2||T>MOONK+1.05)moonT=0;
+  else if(T<MOONK)moonT=2.2*(1-(MOONK-T)/.2);
+  else moonT=Math.max(2.2,moonT)+dt;
+  gl.uniform1f(U.uMoon,moonT);
   gl.uniform1f(U.uT,T);
   gl.uniform1f(U.uTime,time);
   gl.uniform1f(U.uAspect,aspect);
@@ -1462,7 +1613,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.4 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.5 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

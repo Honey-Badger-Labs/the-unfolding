@@ -31,7 +31,9 @@ A stage can show a procedural shape and still be **Observed** if the note says t
 - Real young stars show ringed discs before hydrogen fusion fully ignites; the journey shows ignition first.
 - The beginning is shown from inside: a glare that thins as space expands. There is no outside view, because there is no outside.
 - In the red giant scene Earth is swallowed; its real fate is uncertain. Mars survives.
-- The black hole's light bending uses the weak-field point-lens equation, with the second image pinned to the photon ring. It gives the right shapes; it is not a full general-relativistic ray trace.
+- The black hole is drawn without the bending of light round it: a flat tilted disc, a ring and a shadow. A true view would show the far side of the disc arched over the shadow.
+- Saturn is shown with the rings it has today while the planets are still forming. Cassini data suggest the rings may be only a few hundred million years old; this is debated.
+- The Moon's birth is compressed: the impact, the debris disc and the gathering of the Moon play out in seconds, and the Moon is drawn at about three Earth radii, where it formed. Whether it gathered in hours or over centuries is not settled.
 - The collapse follows the rotating-infall streamlines of Ulrich (1976) and Cassen and Moosman (1981); the clumpy streamers on top are procedural.
 - The gas giant's moons are drawn far closer in than real ones, and its day is shown as about two minutes. Its moons forming from the disc round the planet is the standard model, shown without its own Atlas source.
 - The web grows by the Zel'dovich approximation: matter drifts in straight lines towards the nearest filament or node, and the growth follows the clock as time^(2/3), the rate for a universe filled with matter. It is eased at the very end, and the web it arrives at is procedural, not a simulation.
