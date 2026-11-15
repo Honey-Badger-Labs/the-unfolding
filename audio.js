@@ -74,7 +74,7 @@
 
     // per-voice trims, measured with tests/audio-levels.html so every stage sits near the same loudness
     // (the deepest voices sit a little higher, since the ear hears bass as quieter)
-    var TRIM = { beginning: 0.5, fusion: 1.6, energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.9,
+    var TRIM = { beginning: 0.5, fusion: 1.6, jupiter: 1.4, energy: 0.42, web: 1.06, cluster: 1.95, quasar: 0.69, galaxy: 1.3, heart: 0.9,
                  nursery: 2.24, collapse: 0.6, star: 1.33, worlds: 2.6, giant: 0.85, eye: 1.41 };
     var voices = [];
     function voice(name, build) {
@@ -224,6 +224,18 @@
         chain(osc("triangle", hz(s)), g, o);
       });
       chain(osc("sine", hz(12)), gain(0.1), o);
+    });
+
+    // a gas giant: a deep organ-like fifth that beats slowly, with banded winds blowing across it
+    voice("jupiter", function (o) {
+      [0, 7, 12].forEach(function (sn, i) {
+        var g = gain(0.07); lfo(0.05 + i * 0.03, 0.03, g.gain);
+        chain(osc("triangle", hz(sn), i * 3 - 3), g, o);
+      });
+      var bp = filt("bandpass", 500, 3); lfo(0.08, 250, bp.frequency);
+      chain(noise(), bp, gain(0.1), o);
+      var bp2 = filt("bandpass", 1400, 4); lfo(0.05, 500, bp2.frequency);
+      chain(noise(), bp2, gain(0.04), o);
     });
 
     // worlds form: a slow music-box arpeggio over a soft pad, like orbits ticking round

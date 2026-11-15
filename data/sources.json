@@ -147,6 +147,27 @@
       "publisher": "NASA Goddard",
       "url": "https://www.nasa.gov/universe/nasa-visualization-shows-a-black-holes-warped-world",
       "supports": "Seen nearly edge-on, light from the far side of the disc is bent over and under the black hole; the side moving towards us looks brighter; the photon ring outlines the shadow."
+    },
+    {
+      "id": "nasa-jupiter-facts",
+      "title": "Jupiter: Facts",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/jupiter/facts/",
+      "supports": "Jupiter spins once about every 10 hours, which creates strong jet streams that separate its clouds into dark belts and bright zones flowing east and west in opposite directions; the Great Red Spot is a storm bigger than Earth."
+    },
+    {
+      "id": "jpl-juno-jupiter",
+      "title": "Juno press kit: Jupiter",
+      "publisher": "NASA/JPL",
+      "url": "https://www.jpl.nasa.gov/news/press_kits/juno/jupiter",
+      "supports": "Jupiter's stripes are created by strong east-west winds; to be mostly hydrogen and helium it must have formed while those light gases were still around, when the solar system was young."
+    },
+    {
+      "id": "skyatnight-jupiter",
+      "title": "Facts about Jupiter",
+      "publisher": "BBC Sky at Night Magazine",
+      "url": "https://www.skyatnightmagazine.com/astrophotography/planets/jupiter/",
+      "supports": "Jupiter's equatorial diameter is 142,984 km, 11.2 times Earth's."
     }
   ]
 }

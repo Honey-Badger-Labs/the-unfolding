@@ -1,6 +1,6 @@
 # The Unfolding
 
-A psychedelic, scientifically grounded journey through 13.8 billion years, from primordial energy to an eye made of a dying star's shed gas. One particle body travels through fourteen stages, from the first instant to a dying star's nebula, zooming between scales, and every stage carries an evidence label and its sources.
+A psychedelic, scientifically grounded journey through 13.8 billion years, from primordial energy to an eye made of a dying star's shed gas. One particle body travels through fifteen stages, from the first instant to a dying star's nebula, zooming between scales, and every stage carries an evidence label and its sources.
 
 **Live:** https://honey-badger-labs.github.io/the-unfolding/
 

@@ -107,7 +107,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.2</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.3</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -140,13 +140,13 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 var VS=`#version 300 es
 precision highp float;
 layout(location=0) in vec4 aSeed;
-uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom;
+uniform float uT,uTime,uAspect,uPx,uCam,uAlpha,uShift,uPass,uZoom,uSpin;
 uniform vec2 uField;
 out vec3 vCol;
 out float vA;
 const float PI=3.14159265;
 const float TAU=6.2831853;
-const int ENERGY=1,WEB=2,CLUSTER=3,QUASAR=4,GALAXY=5,HEART=6,NURSERY=7,COLLAPSE=8,FUSION=9,STAR=10,WORLDS=11,GIANT=12;
+const int ENERGY=1,WEB=2,CLUSTER=3,QUASAR=4,GALAXY=5,HEART=6,NURSERY=7,COLLAPSE=8,FUSION=9,STAR=10,JUPITER=11,WORLDS=12,GIANT=13;
 // the galaxy in the protocluster that the camera flies into
 const vec3 FC=vec3(.55,-.32,.35);
 // a planetary system like ours: four small rocky worlds, then giants beyond the frost line
@@ -163,6 +163,7 @@ float gsh=1.;  // red giant: how visible its shed shells are
 float wfl=0.;  // cosmic web: matter streaming along the filaments into the node we dive towards
 float gsp=0.;  // galaxy: extra spin as we dive to its centre, fastest near the middle
 float kq=0.;   // nursery: how far the knot we dive into has contracted
+float jq=1.;   // gas giant: 0 a hot young planet still drawing gas from its disc, 1 formed
 float keep=0.; // set by worlds(): 1 for the planet that survives the red giant (Mars)
 vec3 hash33(vec3 p){
   p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6)));
@@ -617,6 +618,13 @@ void fusion(out vec3 P,out vec3 C,out float S,out float A){
   C+=vec3(.5,.4,.3)*pow(fq,5.)*.5;
 }
 
+vec3 giantPlanetPos(){
+  // where the system's largest planet is on its orbit, in the plane of the system (before its tilt)
+  float pr=PR[4];
+  float ph=hash13(vec3(4.,7.,3.))*TAU+uTime*.18/(pow(pr,1.5)+.05);
+  return vec3(pr*cos(ph),pr*sin(ph),0.);
+}
+
 void youngStar(out vec3 P,out vec3 C,out float S,out float A){
   // the star ignites; its dusty disc shows rings and gaps
   float rr=.12+2.3*sqrt(s.x);
@@ -629,7 +637,72 @@ void youngStar(out vec3 P,out vec3 C,out float S,out float A){
   C=mix(C,mix(vec3(.3,.7,.45),vec3(.8,.2,.12),r3.x),smoothstep(1.2,2.4,rr)*r3.z);
   C=mix(C,vec3(1.,.93,.75),core);
   S=mix(.02,.035,core); A=mix(.5,.85,core);
+  if(core<.5&&r3.y<.02){
+    // a clump of gas and dust beyond the frost line: the seed of a giant planet
+    P=giantPlanetPos()+g*.03; C=vec3(1.2,.8,.45); S=.022; A=.4;
+  }
   P.yz=rot(1.12)*P.yz;
+}
+
+void jupiter(out vec3 P,out vec3 C,out float S,out float A){
+  // a gas giant like Jupiter, seen from 26 degrees above its equator (the tilt of the whole system).
+  // Its fast spin drives alternating east and west jet streams, which draw the clouds into dark belts and
+  // bright zones; a great anticyclone turns counter-clockwise in the southern hemisphere.
+  // jq runs from 0 (a hot young planet still drawing gas from the disc around it) to 1 (formed)
+  float t=uSpin;                                     // seconds since we came to this planet: its storm starts in view
+  float R=1.3*mix(.72,1.,jq);
+  float kind=r3.z;
+  if(kind<.8){
+    vec3 d=normalize(hash33(s*17.3+w*5.1)-.5+vec3(1e-4));
+    d.z=abs(d.z);                                    // the face towards us
+    vec3 q=d; q.yz=rot(-1.12)*q.yz;                  // the planet's own frame: q.z is the spin axis
+    float lat=asin(clamp(q.z,-1.,1.));
+    float lon=atan(q.y,q.x);
+    float wind=.5*cos(lat*7.)*exp(-lat*lat*1.2)+.12*cos(lat*15.);   // zonal jets, strongest at the equator
+    float L=lon-t*.045;                              // the planet turns: one ten-hour day in about two minutes
+    float La=L-wind*t*.12;                           // each band's clouds ride its own wind
+    float turb=sin(La*6.+2.*sin(lat*22.))*sin(lat*37.+La*2.)+.5*sin(La*13.-lat*50.);
+    float band=.5+.5*cos((lat+.022*turb)*13.+.5*sin(lat*4.));
+    vec3 col=mix(vec3(.74,.43,.24),vec3(1.,.93,.8),smoothstep(.25,.75,band));   // belts and zones
+    col=mix(col,vec3(.95,.72,.5),.35*exp(-lat*lat*30.)*(.5+.5*turb));           // festoons along the equator
+    col=mix(col,vec3(.5,.52,.58),smoothstep(.95,1.35,abs(lat)));               // grey-blue polar hazes
+    vec2 sp=vec2(mod(L+2.02+PI,TAU)-PI,lat+.38)/vec2(.27,.13);                  // the Great Red Spot
+    float rho=length(sp);
+    float spot=1.-smoothstep(.75,1.,rho);
+    float swirl=.5+.5*sin(atan(sp.y,sp.x)*2.+rho*7.-t*.5);
+    col=mix(col,vec3(1.,.95,.85),(1.-spot)*exp(-pow((rho-1.15)*5.,2.))*.5);    // the pale collar round it
+    col=mix(col,mix(vec3(.82,.3,.17),vec3(.95,.5,.3),swirl),spot);
+    col=mix(vec3(1.25,.7,.32)*(.75+.25*turb),col,jq);                          // young: glowing with its own heat
+    vec3 pp=q*R; pp.z*=.935;                         // flattened by its spin
+    pp.yz=rot(1.12)*pp.yz;
+    P=pp*(1.+.006*g.x);
+    vec3 jp=giantPlanetPos(); jp.yz=rot(1.12)*jp.yz;
+    vec3 Ld=normalize(-normalize(jp)+vec3(0.,0.,1.1));                         // sunlight from the star
+    float day=mix(1.,smoothstep(-.3,.45,dot(d,Ld)),jq);
+    float mu=d.z;
+    C=col*mix(.4,1.,pow(mu,.6))*mix(.07,1.,day);
+    S=.075; A=.22*max(mu,.12);
+  }else if(kind<.83){
+    // four large moons, gathered from the disc that fed the planet (their orbits are drawn much closer in)
+    float id=floor(r2.x*4.);
+    float mr=R*(1.35+.3*id+.0167*id*id);
+    float ma=hash13(vec3(id,6.,2.))*TAU+t*.9/pow(mr,1.5);
+    P=vec3(mr*cos(ma),mr*sin(ma),0.)+g*.016;
+    P.yz=rot(1.12)*P.yz;
+    C=id<1.?vec3(1.,.85,.4):id<2.?vec3(.9,.9,.95):id<3.?vec3(.75,.7,.65):vec3(.5,.47,.45);
+    S=.018; A=.1*smoothstep(.6,1.,jq);
+    if(P.z<0.&&length(P.xy)<R)A=0.;
+  }else{
+    // the disc of gas and dust round the young planet: it feeds the planet, then clears
+    float r=R*(1.25+1.5*sqrt(s.x));
+    float th=s.y*TAU+t*.8/pow(r,1.5);
+    r+=.05*sin(th*2.+r*9.);
+    P=vec3(r*cos(th),r*sin(th),g.z*.03*r);
+    P.yz=rot(1.12)*P.yz;
+    C=mix(vec3(1.1,.62,.28),vec3(.6,.3,.15),smoothstep(R*1.3,R*2.7,r));
+    S=.026; A=.42*(1.-smoothstep(.2,.95,jq));
+    if(P.z<0.&&length(P.xy)<R*.98)A=0.;
+  }
 }
 
 void worlds(out vec3 P,out vec3 C,out float S,out float A){
@@ -771,6 +844,7 @@ void shape(int k,out vec3 P,out vec3 C,out float S,out float A){
   else if(k==COLLAPSE)protostar(P,C,S,A);
   else if(k==FUSION)fusion(P,C,S,A);
   else if(k==STAR)youngStar(P,C,S,A);
+  else if(k==JUPITER)jupiter(P,C,S,A);
   else if(k==WORLDS)worlds(P,C,S,A);
   else if(k==GIANT)redGiant(P,C,S,A);
   else nebulaEye(P,C,S,A);
@@ -781,6 +855,7 @@ vec3 focus(int k){
   if(k==WEB){vec3 f=nodePos(vec3(0.));f.xz=rot(uTime*.04)*f.xz;return f;}
   if(k==CLUSTER)return FC;
   if(k==NURSERY)return vec3(PT[2],0.);   // the knot at the tip of the smallest pillar
+  if(k==STAR){vec3 f=giantPlanetPos();f.yz=rot(1.12)*f.yz;return f;}   // the seed of the giant planet
   return vec3(0.);                       // the galaxy's centre; the newborn star's core
 }
 
@@ -808,13 +883,15 @@ void main(){
       if(k==NURSERY)kq=zs;                         // the knot contracts under its own weight
     }
     if(k==COLLAPSE&&!first)fq=.35*smoothstep(.55,1.,z);
+    if(k==STAR&&!first)jq=smoothstep(.4,1.,z);       // the giant takes shape as we arrive
+    if(k==JUPITER&&!first)wq=smoothstep(.15,1.,z);   // as we pull back, the other worlds gather out of their rings
     if(k==FUSION){
       // first the core heats and crowds until fusion is everywhere; only then do we pull back
       if(first)fq=mix(.35,1.,smoothstep(0.,.5,z));
       zz=smoothstep(.38,1.,z);
     }
     shape(first?k:k+1,P,C,S,A);
-    wfl=0.;gsp=0.;kq=0.;fq=.35;
+    wfl=0.;gsp=0.;kq=0.;fq=.35;jq=1.;wq=1.;
     if(uZoom>0.){
       // fly towards the focus: the old scene streams past, the new one grows out of that point
       vec3 foc=focus(k);
@@ -826,7 +903,12 @@ void main(){
     }else{
       // pull back: the old scene shrinks away, the new one arrives from beyond the camera
       vec3 off=(k==HEART?vec3(-2.4,1.2,0.):vec3(0.))*zz;
-      if(first){P=P*exp(-L*zz)+off;A*=1.-smoothstep(.5,.95,zz);}
+      if(k==JUPITER){
+        // pull back from the planet to its place on its orbit
+        vec3 jp=giantPlanetPos();jp.yz=rot(1.12)*jp.yz;
+        if(first){P=P*exp(-L*zz)+jp*zz;A*=mix(1.,.04,smoothstep(0.,.8,zz))*(1.-smoothstep(.88,1.,zz));}
+        else{P=(P-jp)*exp(L*(1.-zz))+jp*zz;A*=smoothstep(.05,.5,zz);}
+      }else if(first){P=P*exp(-L*zz)+off;A*=1.-smoothstep(.5,.95,zz);}
       else{P=P*exp(L*(1.-zz));A*=smoothstep(.05,.5,zz);}
       if(k==HEART){hc=off;hr=.6*exp(-L*zz);hw=1.-smoothstep(.5,.95,zz);}
     }
@@ -886,12 +968,6 @@ void main(){
       f=ease(z*2.6-.7*w);
       swirl=.35;
     }
-    if(k==STAR){
-      // the star's disc settles into dust rings, then planets gather out of them
-      wq=smoothstep(.18,1.,z);
-      f=ease(z*3.-.6*w);
-      swirl=.25;
-    }
     shape(k,Pa,Ca,Sa,Aa);
     shape(k+1,Pb,Cb,Sb,Ab);
     gq=1.;wq=1.;
@@ -942,13 +1018,13 @@ function sh(type,src){
 }
 var prog=gl.createProgram();
 // the shader draws SHAPE_COUNT shapes; the Atlas must have one event per shape (tests check this)
-var SHAPE_COUNT=14, LAST=SHAPE_COUNT-1;
+var SHAPE_COUNT=15, LAST=SHAPE_COUNT-1;
 gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS.replace("__LAST__",String(LAST-1))));
 gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
 gl.linkProgram(prog);
 if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(prog));document.getElementById("fail").style.display="flex";return;}
 gl.useProgram(prog);
-var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom","uSpin"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
 
 var COUNTS=[60000,120000,240000];
 var coarse=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches;
@@ -1212,6 +1288,7 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
     var i=document.createElement("i");i.textContent=e.tick;ticks.appendChild(i);
     names[e.tick.toLowerCase()]=k;
   });
+  if(names.jupiter!==undefined)JUP=names.jupiter;
   reserveText();
   // optional start position: #galaxy, or #t250 for stage 2.5
   var h=(location.hash||"").replace("#","");
@@ -1223,6 +1300,7 @@ Promise.all([getJSON("data/events.json"),getJSON("data/sources.json")]).then(fun
   document.getElementById("note").textContent="The Atlas could not be loaded, so stage notes are unavailable. The visuals still run.";
 });
 
+var spinT=0,JUP=-1; // the gas giant's own clock, restarted each visit so its storm is in view
 var warm=0,last=performance.now(),time=0,frames=0,acc=0,fpsEl=document.getElementById("fps");
 function frame(now){
   var dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
@@ -1256,6 +1334,8 @@ function frame(now){
   var D=cam(T);
   gl.uniform1f(U.uShift,shift);
   gl.clear(gl.COLOR_BUFFER_BIT);
+  if(JUP>=0&&Math.abs(T-JUP)<1)spinT+=dt;else spinT=0;
+  gl.uniform1f(U.uSpin,spinT);
   gl.uniform1f(U.uT,T);
   gl.uniform1f(U.uTime,time);
   gl.uniform1f(U.uAspect,aspect);
@@ -1280,7 +1360,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.2 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.3 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

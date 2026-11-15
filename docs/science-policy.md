@@ -31,3 +31,6 @@ A stage can show a procedural shape and still be **Observed** if the note says t
 - Real young stars show ringed discs before hydrogen fusion fully ignites; the journey shows ignition first.
 - The beginning is shown from inside: a glare that thins as space expands. There is no outside view, because there is no outside.
 - In the red giant scene Earth is swallowed; its real fate is uncertain. Mars survives.
+- The black hole's light bending uses the weak-field point-lens equation, with the second image pinned to the photon ring. It gives the right shapes; it is not a full general-relativistic ray trace.
+- The collapse follows the rotating-infall streamlines of Ulrich (1976) and Cassen and Moosman (1981); the clumpy streamers on top are procedural.
+- The gas giant's moons are drawn far closer in than real ones, and its day is shown as about two minutes. Its moons forming from the disc round the planet is the standard model, shown without its own Atlas source.

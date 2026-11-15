@@ -310,13 +310,45 @@
       },
       "sound": "the first major chord, bright and warm",
       "transition": {
-        "type": "morph",
-        "pace": 0.5
+        "type": "zoom-in",
+        "depth": 3.3
+      }
+    },
+    {
+      "id": "gas-giant",
+      "stage": 11,
+      "tick": "Jupiter",
+      "title": "A giant like Jupiter",
+      "label": "model",
+      "era": "while the young disc is still rich in gas",
+      "scale": "about 11 Earths wide",
+      "note": "Beyond the frost line a giant forms while gas is still plentiful. Its ten-hour spin drives jet streams that pull the clouds into belts and zones flowing opposite ways, round a storm wider than Earth.",
+      "age": [
+        9201000000,
+        9210000000
+      ],
+      "clock": 9203000000,
+      "tempo": "one ten-hour day every two minutes",
+      "sources": [
+        "nasa-jupiter-facts",
+        "jpl-juno-jupiter",
+        "skyatnight-jupiter"
+      ],
+      "camera": {
+        "dist": 5.8,
+        "fitW": 3.3,
+        "fitH": 1.9
+      },
+      "sound": "a deep organ-like fifth that beats slowly, with banded winds blowing across it",
+      "transition": {
+        "type": "zoom-out",
+        "depth": 3.3,
+        "pace": 0.6
       }
     },
     {
       "id": "worlds-form",
-      "stage": 11,
+      "stage": 12,
       "tick": "Worlds",
       "title": "Worlds form",
       "label": "model",
@@ -345,7 +377,7 @@
     },
     {
       "id": "red-giant",
-      "stage": 12,
+      "stage": 13,
       "tick": "Giant",
       "title": "The star sheds its shell",
       "label": "model",
@@ -376,7 +408,7 @@
     },
     {
       "id": "nebula-eye",
-      "stage": 13,
+      "stage": 14,
       "tick": "Eye",
       "title": "The universe looks back",
       "label": "observed",
