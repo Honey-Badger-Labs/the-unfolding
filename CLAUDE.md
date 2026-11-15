@@ -8,6 +8,7 @@
 - Transitions come from the Atlas: `morph`, `zoom-in`, `zoom-out`, or `out-in` (pull back to the `via` stage, then dive by `depth2`).
 - Sound: one voice per stage in `audio.js`, levelled with `tests/audio-levels.html`; `tests/audio-sweep.html` plays the whole journey offline and reports clipping, silent gaps and engine cost (keep render speed well above 10x) (needs a browser driver such as puppeteer-core; headless `--dump-dom` returns before offline rendering finishes).
 - To look at a stage, serve the folder (`npm run serve`) and screenshot `index.html#<tick>` in headless Chrome with SwiftShader; `file://` cannot load the Atlas.
+- Film: `tools/film.mjs` renders the journey frame by frame with its soundtrack (not real time, about 2 frames/s in software). The `Film` workflow runs it on GitHub and keeps the MP4 as a run artifact.
 - The prototype is also published as a claude.ai artifact (slug `27ee1faf-26b2-4187-9ded-a7b4c795761a`). Republish `index.html`, `audio.js` and `data/*.json` together. It is currently private (owner only); GitHub Pages is the public link.
 
 ## Commits

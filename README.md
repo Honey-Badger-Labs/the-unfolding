@@ -36,3 +36,7 @@ Every stage is labelled **Observed**, **Model-dependent** or **Artistic interpre
 ## Licence
 
 The code (`index.html`, `audio.js`, `tests/`, `.github/`, `package.json`) is [MIT](LICENSE). The content (the Atlas text, docs, the name and media made from the experience) is all rights reserved; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
+
+## Film
+
+`tools/film.mjs` records the journey to an MP4 with its soundtrack, frame by frame, so nothing is dropped however slow the machine. Run the **Film** workflow from the Actions tab and download the result from the run's Artifacts, or run it locally (see the notes at the top of the file; needs Chrome and ffmpeg).

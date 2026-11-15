@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Film soundtrack renderer</title></head>
+<body>
+<p>Used by tools/film.mjs: renders the soundtrack offline for a recorded timeline.</p>
+<script src="../audio.js"></script>
+<script>
+// o.track holds the journey position at every film frame. The soundtrack is driven exactly as the page drives it:
+// on from the moment Play is pressed, updated with the position and the kind of move, and faded over 8 s at the end.
+window.renderFilmAudio = async function (o) {
+  var STEP = 0.05, ev = o.events.slice().sort(function (a, b) { return a.stage - b.stage; }), last = ev.length - 1;
+  function zoomAt(T) {
+    var k = Math.min(last - 1, Math.floor(T)), t = ev[k].transition;
+    if (!t || t.type === "morph") return 0;
+    if (t.type === "zoom-in") return t.depth;
+    if (t.type === "out-in" && T - k > 0.5) return t.depth2;
+    return -t.depth;
+  }
+  var ctx = new OfflineAudioContext(2, Math.ceil(o.rate * o.seconds), o.rate);
+  var snd = createSoundtrack(ctx, ctx.destination), on = false, off = false;
+  for (var t = 0; t < o.seconds - STEP; t += STEP) {
+    (function (time) {
+      ctx.suspend(time).then(function () {
+        if (!on && time >= Math.max(0, o.head - 1.5)) { snd.setOn(true); on = true; }
+        if (!off && o.endedAt >= 0 && time >= o.endedAt) { snd.setOn(false, 8); off = true; }
+        var T = o.track[Math.min(o.track.length - 1, Math.round(time * o.fps))];
+        snd.update(T, zoomAt(T));
+        ctx.resume();
+      });
+    })(Math.round(t / STEP) * STEP);
+  }
+  var buf = await ctx.startRendering();
+  var L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length;
+  function b64(bytes) { var s = ""; for (var i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); return btoa(s); }
+  var head = new DataView(new ArrayBuffer(44)), bytes = n * 4;
+  function str(at, s) { for (var i = 0; i < s.length; i++) head.setUint8(at + i, s.charCodeAt(i)); }
+  str(0, "RIFF"); head.setUint32(4, 36 + bytes, true); str(8, "WAVEfmt "); head.setUint32(16, 16, true); head.setUint16(20, 1, true);
+  head.setUint16(22, 2, true); head.setUint32(24, o.rate, true); head.setUint32(28, o.rate * 4, true); head.setUint16(32, 4, true);
+  head.setUint16(34, 16, true); str(36, "data"); head.setUint32(40, bytes, true);
+  await window.__wav(b64(new Uint8Array(head.buffer)));
+  var CH = 262144;
+  for (var at = 0; at < n; at += CH) {
+    var m = Math.min(CH, n - at), pcm = new Int16Array(m * 2);
+    for (var i = 0; i < m; i++) {
+      pcm[i * 2] = Math.max(-1, Math.min(1, L[at + i])) * 32767;
+      pcm[i * 2 + 1] = Math.max(-1, Math.min(1, R[at + i])) * 32767;
+    }
+    await window.__wav(b64(new Uint8Array(pcm.buffer)));
+  }
+  return n;
+};
+</script>
+</body>
+</html>

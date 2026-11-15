@@ -1,0 +1,39 @@
+# Renders the whole journey to an MP4 with its soundtrack. Start it by hand from the Actions tab
+# ("Film" > "Run workflow"); the finished film appears under the run's Artifacts.
+# The picture is rendered frame by frame, not in real time, so a full film takes a few hours.
+name: Film
+on:
+  workflow_dispatch:
+    inputs:
+      width: { description: "Width in pixels", default: "1920" }
+      height: { description: "Height in pixels (use 1080 x 1920 for a vertical clip)", default: "1080" }
+      fps: { description: "Frames per second", default: "30" }
+      particles: { description: "Particles in thousands: 60, 120 or 240", default: "240" }
+      from: { description: "First stage number", default: "0" }
+      to: { description: "Last stage number (blank for the end)", default: "" }
+jobs:
+  film:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save puppeteer-core@23 @fontsource/cormorant-garamond @fontsource/ibm-plex-mono
+      - run: which ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Render
+        run: |
+          python3 -m http.server 8765 >/dev/null 2>&1 &
+          sleep 2
+          TO="${{ inputs.to }}"
+          node tools/film.mjs --out the-unfolding.mp4 --width ${{ inputs.width }} --height ${{ inputs.height }} \
+            --fps ${{ inputs.fps }} --particles ${{ inputs.particles }} --from ${{ inputs.from }} ${TO:+--to $TO} \
+            --chrome "$(which google-chrome)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the-unfolding-${{ inputs.width }}x${{ inputs.height }}
+          path: |
+            the-unfolding.mp4
+            the-unfolding.mp4.json
+          compression-level: 0
+          retention-days: 30
