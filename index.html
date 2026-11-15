@@ -107,7 +107,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.5</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.6</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -156,6 +156,7 @@ const float PH[8]=float[8](1.3,4.1,2.4,5.6,3.6,.6,4.9,2.);
 const float PS[8]=float[8](.008,.013,.014,.010,.05,.042,.028,.027);
 const vec3 PC[8]=vec3[8](vec3(.6,.55,.5),vec3(.95,.8,.5),vec3(.3,.55,1.),vec3(.9,.4,.25),vec3(.9,.7,.5),vec3(.95,.85,.6),vec3(.6,.9,.95),vec3(.3,.45,1.));
 vec3 s,r2,r3,g; float w;
+float mq=0.;   // young galaxy: how far its merger with a neighbour has gone (0 the neighbour still far off, 1 one body)
 float gq=1.;   // how far the galaxy has formed; below 1 only while it forms
 float wq=1.;   // how far the planets have formed; below 1 only while they form
 float bq=1.;   // the first expansion: 0 dense and white-hot, 1 the primordial energy
@@ -246,19 +247,46 @@ void protocluster(out vec3 P,out vec3 C,out float S,out float A){
     // faint galaxies far behind the cluster
     P=(s*2.-1.)*vec3(3.4,2.1,1.5); C=mix(vec3(.9,.7,.5),vec3(.6,.7,1.),r2.x)*.55; S=.012; A=.5;
   }else{
+    // The galaxies come in the kinds we know. Young, gas-rich ones dominate at this epoch: blue spirals and
+    // ragged, clumpy irregulars. Smooth red ellipticals and armless lens-shaped discs, whose star-making is
+    // over, gather towards the crowded middle, and a giant elliptical is growing at the centre
     float u=r2.z;
-    float id=u<.1?0.:u<.22?1.:2.+floor(r2.x*60.);
+    float gi=r2.x*44.;
+    float id=u<.1?0.:u<.22?1.:2.+floor(gi);
+    float f1=fract(gi);
     vec3 h=hash33(vec3(id,11.,4.));
-    vec3 c=id<.5?FC:id<1.5?vec3(-.3,.12,-.2):normalize(h-.5+1e-4)*2.4*pow(hash13(vec3(id,3.,3.)),.6);
-    float sz=id<.5?.12:id<1.5?.2:.06+.1*h.x;
-    vec3 q=g;
-    q.z*=h.y<.5?.3:.85;
+    float far=pow(hash13(vec3(id,3.,3.)),.6);
+    vec3 c=id<.5?FC:id<1.5?vec3(-.3,.12,-.2):normalize(h-.5+1e-4)*2.4*far;
+    float sz=id<.5?.12:id<1.5?.2:.07+.1*h.x;
+    float ts=hash13(vec3(id,5.,9.));
+    float pe=mix(.36,.05,far);
+    int type=id<.5?3:id<1.5?0:ts<pe?0:ts<pe+.09?1:ts<pe+.44?2:3;   // elliptical, lenticular, spiral, irregular
+    vec3 q; vec3 col;
+    if(type==0){
+      q=g*sz*(.2+.85*r3.y*r3.y)*vec3(1.,.72+.25*h.z,.8);
+      col=mix(vec3(1.05,.8,.5),vec3(1.,.62,.36),r3.y);
+    }else if(type==1){
+      q=f1<.3?g*sz*.2:g*sz*vec3(1.,1.,.07);
+      col=vec3(1.,.84,.58);
+    }else if(type==2){
+      if(f1<.2){q=g*sz*.17;col=vec3(1.05,.88,.6);}
+      else{
+        float rad=sz*(.22+1.35*r3.y);
+        float th=floor(s.x*2.)*PI+2.4*log(rad/sz+.25)+g.x*.3-uTime*.05;
+        q=vec3(rad*cos(th),rad*sin(th),g.z*.04*sz);
+        col=r3.x<.12?vec3(1.25,.45,.7):mix(vec3(.5,.68,1.2),vec3(.8,.85,1.05),r3.x);
+      }
+    }else{
+      float ci=floor(s.x*4.);
+      vec3 hc=hash33(vec3(id,ci,7.));
+      q=(hc-.5)*sz*1.5*vec3(1.,1.,.4)+g*sz*(.2+.25*hc.x);
+      col=mix(vec3(.5,.7,1.25),vec3(1.2,.5,.8),step(.6,hc.y))*(.7+.4*r3.x);
+    }
     q.xy=rot(h.z*TAU)*q.xy; q.yz=rot(h.x*3.)*q.yz;
-    P=c+q*sz;
-    C=mix(vec3(.55,.7,1.15),vec3(1.,.75,.45),step(.55,h.y))*(.6+.5*r3.x);
+    P=c+q;
+    C=col*(.6+.5*r3.x);
     if(id<.5)C=mix(vec3(.6,.75,1.3),vec3(1.2,.5,.8),r3.x);
-    if(id>.5&&id<1.5)C=vec3(1.,.82,.6);
-    S=.024; A=id<.5?.22:id<1.5?.14:.2;
+    S=.022; A=id<.5?.22:id<1.5?.13:.18;
   }
 }
 
@@ -266,8 +294,32 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   // a young, gas-rich galaxy mid-merger: giant star-forming clumps, tidal tails,
   // a blinding core fed by infalling gas, and twin jets
   float kind=r3.z;
+  // A neighbour falls in (mq): a first close pass, out again on a shrinking orbit, a second pass, then one body.
+  // The path is drawn by hand, not computed from gravity; the tides it raises pull both galaxies into tails
+  float fall=1.-smoothstep(0.,.42,mq);
+  float rho=max(7.*fall*fall+1.9*exp(-pow((mq-.57)/.1,2.)),.95)*(1.-smoothstep(.68,.92,mq));
+  float phi=.6+2.6*smoothstep(.26,.5,mq)+3.8*smoothstep(.55,.9,mq);
+  vec3 cp=rho*vec3(cos(phi),sin(phi),.12);
+  float tide=smoothstep(.3,.46,mq);
+  if(w<.26){
+    // the neighbour: a smaller gas-rich disc with a bright centre
+    float lr=.62*sqrt(r3.y);
+    float la=s.y*TAU-uTime*.3/(lr+.2)+2.2*lr;
+    vec3 l=vec3(lr*cos(la),lr*sin(la),g.z*.07)+g*.05;
+    if(r2.y<.16){l=g*.07;C=vec3(1.15,1.,.8);}
+    else C=mix(vec3(.5,.7,1.25),vec3(1.2,.5,.8),step(.8,r3.x))*(.5+.5*r2.x);
+    l.xz=rot(.35)*l.xz;
+    // tides: its far side is flung out into a tail along the orbit, its near side forms a bridge
+    vec2 along=vec2(-sin(phi),cos(phi));
+    float st=dot(l.xy,along);
+    l.xy+=along*st*3.2*tide*(1.-smoothstep(.8,1.,mq))*(.3+r3.x);
+    l*=1.+.5*smoothstep(.75,1.,mq);
+    P=cp+l; S=.024; A=.5;
+    P.yz=rot(1.0)*P.yz;
+    return;
+  }
   if(r2.y<.05){
-    P=g*.04; C=vec3(1.3,1.35,1.5); S=.032; A=.9;
+    P=g*.04; C=vec3(1.3,1.35,1.5)*(1.+.6*tide); S=.032; A=.9;
   }else if(r2.x<.18){
     float side=r3.y<.5?1.:-1.;
     float h=fract(r2.z+uTime*.1*(.6+r3.x));
@@ -299,6 +351,12 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
     P*=1.3;
     C=mix(vec3(1.,.35,.45),vec3(.5,.55,1.),r3.x)*.6;
     S=.03; A=.4;
+  }
+  if(r2.y>=.05&&r2.x>=.18){
+    // the main galaxy answers the neighbour's pull: its outskirts are drawn out and wound into a tail
+    float rr=length(P.xy), outer=smoothstep(.7,2.4,rr);
+    P.xy=rot(-.9*tide*outer)*P.xy*(1.+.5*tide*outer*r3.x);
+    P.xy-=cp.xy*.12*tide*(1.-smoothstep(.7,.95,mq));
   }
   P.yz=rot(1.0)*P.yz;
 }
@@ -1093,13 +1151,15 @@ void main(){
     float pulse=.5+.5*cos((z-.08)/.0917*TAU);
     gr=mix(1.,.06,smoothstep(.08,.85,z))*(1.+.07*pulse*(1.-smoothstep(.6,.75,z)));
   }
+  if(two&&k==QUASAR)mq=smoothstep(0.,.52,z);       // first the neighbour falls in and the two become one
   shape(ia,Pa,Ca,Sa,Aa);
   float kp=keep;
+  mq=0.;
   wfl=0.;gsp=0.;kq=0.;fq=.35;jq=1.;wq=1.;bq=1.;gr=1.;gf=0.;sat=0.;jv=1.;dv=1.;wm=1.;
   float Rs=mix(.11,1.3,pow(zs,1.15));              // the swelling Sun's radius (worlds to red giant)
   if(two){
     if(k==WORLDS){gr=Rs/1.3;gsh=smoothstep(.74,1.,z);}
-    if(k==QUASAR)gq=smoothstep(.22,1.,z);          // the spiral grows out of a central cloud
+    if(k==QUASAR)gq=smoothstep(.5,1.,z);           // after the merger, the spiral grows out of the central cloud
     shape(ib,Pb,Cb,Sb,Ab);
     gr=1.;gsh=1.;gq=1.;
   }
@@ -1204,9 +1264,10 @@ void main(){
     float f=ease(z*1.5-.5*w);
     float swirl=1.;
     if(k==QUASAR){
-      // the young galaxy collapses into a central cloud, then the spiral grows out of it
-      f=ease(z*2.6-.7*w);
+      // the merged galaxy settles into a central cloud, bright with new stars, then the spiral grows out of it
+      f=ease((z-.44)*3.4-.6*w);
       swirl=.35;
+      Ca+=vec3(.5,.3,.42)*exp(-pow((z-.5)/.09,2.));
     }
     P=mix(Pa,Pb,f); C=mix(Ca,Cb,f); S=mix(Sa,Sb,f); A=mix(Aa,Ab,f);
     float sw=sin(PI*f)*swirl;
@@ -1613,7 +1674,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.5 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.6 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

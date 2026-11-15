@@ -32,6 +32,7 @@ A stage can show a procedural shape and still be **Observed** if the note says t
 - The beginning is shown from inside: a glare that thins as space expands. There is no outside view, because there is no outside.
 - In the red giant scene Earth is swallowed; its real fate is uncertain. Mars survives.
 - The black hole is drawn without the bending of light round it: a flat tilted disc, a ring and a shadow. A true view would show the far side of the disc arched over the shadow.
+- The galaxy merger is drawn by hand, not computed from gravity: one close pass, a second, then one body, in seconds. The mix of galaxy kinds in the young cluster is illustrative; at that epoch most galaxies were clumpy and star-forming.
 - Saturn is shown with the rings it has today while the planets are still forming. Cassini data suggest the rings may be only a few hundred million years old; this is debated.
 - The Moon's birth is compressed: the impact, the debris disc and the gathering of the Moon play out in seconds, and the Moon is drawn at about three Earth radii, where it formed. Whether it gathered in hours or over centuries is not settled.
 - The collapse follows the rotating-infall streamlines of Ulrich (1976) and Cassen and Moosman (1981); the clumpy streamers on top are procedural.

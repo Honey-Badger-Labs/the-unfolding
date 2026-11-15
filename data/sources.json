@@ -203,6 +203,27 @@
       "publisher": "NASA",
       "url": "https://www.nasa.gov/solar-system/saturns-rings-young-and-ephemeral-three-nasa-ames-studies-say",
       "supports": "Evidence from the Cassini mission that Saturn's rings are a relatively recent addition and may last only a few hundred million years more."
+    },
+    {
+      "id": "nasa-galaxy-types",
+      "title": "Galaxy Types",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/universe/galaxies/types/",
+      "supports": "The main kinds of galaxy: spirals, ellipticals with little gas or structure, armless lenticulars, and irregulars; ellipticals are thought to come from collisions and mergers."
+    },
+    {
+      "id": "astronomy-early-galaxies",
+      "title": "How are early galaxies different than galaxies today?",
+      "publisher": "Astronomy magazine",
+      "url": "https://www.astronomy.com/science/how-are-early-galaxies-different-than-galaxies-today/",
+      "supports": "Galaxies in the early universe tend to be clumpy and far more active than today's, and ellipticals of that era were more compact."
+    },
+    {
+      "id": "nasa-quasar-mergers",
+      "title": "NASA's Hubble Sees the 'Teenage Years' of Quasars",
+      "publisher": "NASA",
+      "url": "https://science.nasa.gov/centers-and-facilities/goddard/nasas-hubble-sees-the-teenage-years-of-quasars/",
+      "supports": "Hubble images of dusty quasars show colliding galaxies: a merger drives gas towards the central black hole, which lights the quasar."
     }
   ]
 }

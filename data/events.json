@@ -1,5 +1,5 @@
 {
-  "version": "0.5.0",
+  "version": "0.6.0",
   "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, a zoom in or out by 'depth' e-folds of scale, or 'out-in' (pull back to the 'via' stage, then dive by 'depth2'). 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
   "events": [
     {
@@ -98,14 +98,16 @@
       "label": "observed",
       "era": "about 10 billion years ago",
       "scale": "a few million light-years across",
-      "note": "The bright knot resolves into dozens of young galaxies with empty space between them, pulled together by gravity. Webb sees clusters like this forming, such as the Spiderweb.",
+      "note": "The bright knot resolves into dozens of young galaxies: blue spirals and ragged, clumpy irregulars, with smooth red ellipticals gathering in the middle. Webb sees clusters like this forming.",
       "age": [
         3000000000,
         4500000000
       ],
       "clock": 3600000000,
       "sources": [
-        "esa-webb-spiderweb"
+        "esa-webb-spiderweb",
+        "nasa-galaxy-types",
+        "astronomy-early-galaxies"
       ],
       "camera": {
         "dist": 5.8,
@@ -126,14 +128,15 @@
       "label": "observed",
       "era": "about 10 billion years ago, when quasars peaked",
       "scale": "tens of thousands of light-years, jets far beyond",
-      "note": "Inside the cluster, one smudge up close: a young galaxy with giant clumps of new stars, tidal tails, and a core outshining everything, firing twin jets.",
+      "note": "One smudge up close: a young galaxy with giant clumps of new stars and a core outshining everything, firing twin jets. A neighbour is falling in; such collisions feed the black hole.",
       "age": [
         2000000000,
         4500000000
       ],
       "clock": 3800000000,
       "sources": [
-        "nature-quasar-peak"
+        "nature-quasar-peak",
+        "nasa-quasar-mergers"
       ],
       "camera": {
         "dist": 5.8,
@@ -143,7 +146,7 @@
       "sound": "a bright chord pulsing hard, a deep throb and a jet-like hiss",
       "transition": {
         "type": "morph",
-        "pace": 0.4
+        "pace": 0.36
       }
     },
     {
