@@ -224,6 +224,20 @@
       "publisher": "NASA",
       "url": "https://science.nasa.gov/centers-and-facilities/goddard/nasas-hubble-sees-the-teenage-years-of-quasars/",
       "supports": "Hubble images of dusty quasars show colliding galaxies: a merger drives gas towards the central black hole, which lights the quasar."
+    },
+    {
+      "id": "toomre-1972",
+      "title": "Galactic Bridges and Tails",
+      "publisher": "The Astrophysical Journal (Toomre and Toomre, 1972)",
+      "url": "https://doi.org/10.1086/151823",
+      "supports": "Tidal tails and bridges between interacting galaxies are produced by gravity alone in close encounters; the restricted method (test stars in the field of two masses) reproduces them."
+    },
+    {
+      "id": "nasa-saturn-blue",
+      "title": "Saturn's Blue Cranium (PIA06177)",
+      "publisher": "NASA Science (Cassini)",
+      "url": "https://science.nasa.gov/photojournal/saturns-blue-cranium",
+      "supports": "A natural-colour Cassini image of Saturn's northern hemisphere in blue during its winter; the blue later faded to other hues."
     }
   ]
 }

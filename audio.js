@@ -101,7 +101,24 @@
 
     // the beginning: a deep "om". A low drone through two vowel formants that slowly open ("o")
     // and close to a hum ("m")
-    voice("beginning", function (o) {
+    voice("beginning", function (o, v) {
+      // before: an empty, spacious hum (a slow beat between two deep tones, and faint air)
+      var hum = gain(1); chain(hum, o);
+      chain(osc("sine", hz(-12)), gain(0.32), hum);
+      chain(osc("sine", hz(-12) + 0.35), gain(0.28), hum);
+      chain(osc("sine", hz(7)), gain(0.025), hum);
+      var air = filt("bandpass", 1400, 0.8); lfo(0.04, 600, air.frequency);
+      chain(noise(), air, gain(0.06), hum);
+      // then, as space begins to expand: a boom and the om
+      var omOut = gain(0); chain(omOut, o);
+      v.follow = function (T, now) {
+        var begun = T > 0.0005;
+        smooth(hum.gain, begun ? 0 : 1, now, begun ? 0.08 : 0.6);
+        smooth(omOut.gain, begun ? 1 : 0, now, begun ? 0.25 : 0.4);
+        if (begun && !v.banged) { v.banged = true; boom(mix, now); }
+        if (!begun) v.banged = false;
+      };
+      o = omOut;
       var src = gain(1);
       chain(osc("sawtooth", hz(0), -5), src); chain(osc("sawtooth", hz(0), 5), src); chain(osc("sawtooth", hz(-12)), src);
       var open = gain(0.5); lfo(0.06, 0.45, open.gain);
@@ -291,6 +308,19 @@
       chain(osc("sine", hz(0)), gain(0.1), o);
     });
 
+    // the first instant: a deep boom that falls away, with a burst of noise
+    function boom(dest, when) {
+      var o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.setValueAtTime(110, when); o.frequency.exponentialRampToValueAtTime(30, when + 2.5);
+      var g = ctx.createGain(); g.gain.setValueAtTime(0, when);
+      g.gain.linearRampToValueAtTime(0.9, when + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, when + 4);
+      o.connect(g); g.connect(dest); o.start(when); o.stop(when + 4.1);
+      var n = ctx.createBufferSource(); n.buffer = noiseBuf;
+      var lp = filt("lowpass", 2400, 0.7); lp.frequency.setValueAtTime(2400, when); lp.frequency.exponentialRampToValueAtTime(120, when + 2);
+      var ng = ctx.createGain(); ng.gain.setValueAtTime(0.5, when); ng.gain.exponentialRampToValueAtTime(0.0001, when + 2.4);
+      n.connect(lp); lp.connect(ng); ng.connect(dest); n.start(when); n.stop(when + 2.5);
+    }
+
     // ---------- the rush of a zoom: filtered noise that sweeps up (in) or down (out)
     var rushFilter = filt("bandpass", 400, 1.2), rush = gain(0);
     chain(noise(), rushFilter, rush, mix);
@@ -331,6 +361,7 @@
             else if (now - v.quietSince > 1.5) sleep(v, now);
           }
           if (v.tick && w > 0.05) v.tick(now, 0.3);
+          if (v.follow) v.follow(T, now);
         });
         var k = Math.floor(T), fr = T - k, swell = Math.pow(Math.sin(Math.PI * fr), 1.5);
         if (zoom > 0) { smooth(rush.gain, 0.22 * swell, now); smooth(rushFilter.frequency, 150 * Math.pow(30, fr), now, 0.05); }

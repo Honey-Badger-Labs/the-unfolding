@@ -4,6 +4,7 @@
 - No build step and no dependencies. `index.html` must keep working when opened from any static host.
 - Facts live in `data/events.json` and `data/sources.json`, never hard-coded in the page. Run `npm test` before every commit.
 - Follow `docs/science-policy.md`: label every claim, cite a real source you have read, say when shapes are procedural or exaggerated.
+- The galaxy merger is simulated in JS on load (`simulateMerger`) and read by the shader from a float texture (`uSim`); keep `SIM_SAMPLES` and `SIMN` equal.
 - Shader: `main()` evaluates at most two scenes per particle (`shape(ia…)`, `shape(ib…)`). Set a stage's state before those calls and combine after; never add another `shape()` call, because each one multiplies compile time (it was 20 s in SwiftShader before this rule, 5 s after).
 - Transitions come from the Atlas: `morph`, `zoom-in`, `zoom-out`, or `out-in` (pull back to the `via` stage, then dive by `depth2`).
 - Sound: one voice per stage in `audio.js`, levelled with `tests/audio-levels.html`; `tests/audio-sweep.html` plays the whole journey offline and reports clipping, silent gaps and engine cost (keep render speed well above 10x) (needs a browser driver such as puppeteer-core; headless `--dump-dom` returns before offline rendering finishes).

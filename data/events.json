@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, a zoom in or out by 'depth' e-folds of scale, or 'out-in' (pull back to the 'via' stage, then dive by 'depth2'). 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
   "events": [
     {
@@ -10,7 +10,7 @@
       "label": "model",
       "era": "the first instant",
       "scale": "everything we can see, packed together",
-      "note": "Our whole observable universe, hot and dense beyond imagining. Not an explosion into empty space: there is no outside. Space itself begins to expand, everywhere at once.",
+      "note": "What came before, if anything, physics cannot yet say. Then our whole observable universe, hot and dense beyond imagining, begins to expand: not into space, but space itself, everywhere at once.",
       "age": [
         0,
         0
@@ -26,7 +26,7 @@
         "fitW": 0,
         "fitH": 0
       },
-      "sound": "a deep, slow om: a low drone that opens into a vowel and closes to a hum",
+      "sound": "an empty, spacious hum; then a deep boom and a slow om as space begins to expand",
       "transition": {
         "type": "morph",
         "pace": 0.6
@@ -128,7 +128,7 @@
       "label": "observed",
       "era": "about 10 billion years ago, when quasars peaked",
       "scale": "tens of thousands of light-years, jets far beyond",
-      "note": "One smudge up close: a young galaxy with giant clumps of new stars and a core outshining everything, firing twin jets. A neighbour is falling in; such collisions feed the black hole.",
+      "note": "A young galaxy blazes, its black hole fed by gas. Another galaxy, with a black hole of its own, falls in: they pass, swing back, throw out tails of stars and merge, black holes and all.",
       "age": [
         2000000000,
         4500000000
@@ -136,7 +136,8 @@
       "clock": 3800000000,
       "sources": [
         "nature-quasar-peak",
-        "nasa-quasar-mergers"
+        "nasa-quasar-mergers",
+        "toomre-1972"
       ],
       "camera": {
         "dist": 5.8,
@@ -146,7 +147,7 @@
       "sound": "a bright chord pulsing hard, a deep throb and a jet-like hiss",
       "transition": {
         "type": "morph",
-        "pace": 0.36
+        "pace": 0.3
       }
     },
     {
@@ -331,7 +332,7 @@
       "label": "model",
       "era": "while the young disc is still rich in gas",
       "scale": "about 11 Earths wide",
-      "note": "Beyond the frost line giants form while gas is plentiful. Jupiter's ten-hour spin pulls its clouds into belts and zones flowing opposite ways. Saturn is shown with today's rings, which may be young.",
+      "note": "Beyond the frost line giants form while gas is plentiful, their auroras ringing the poles. Saturn's winter hemisphere looks blue, as Cassini saw it; its rings may be young.",
       "age": [
         9201000000,
         9210000000
@@ -342,7 +343,8 @@
         "nasa-jupiter-facts",
         "jpl-juno-jupiter",
         "skyatnight-jupiter",
-        "nasa-saturn-rings"
+        "nasa-saturn-rings",
+        "nasa-saturn-blue"
       ],
       "camera": {
         "dist": 5.8,
@@ -366,7 +368,7 @@
       "label": "model",
       "era": "about 4.5 billion years ago, as the Earth finished forming",
       "scale": "Earth, and an impactor the size of Mars",
-      "note": "A Mars-sized world, Theia, strikes the young Earth a glancing blow. Molten debris circles the planet and gathers into the Moon: in hours or over centuries, models differ. Distances are compressed.",
+      "note": "A Mars-sized world, Theia, strikes the young Earth. Debris circles it and gathers into the Moon. As we leave, time races: oceans fill and the Earth turns blue. Distances are compressed.",
       "age": [
         9230000000,
         9300000000
