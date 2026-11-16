@@ -113,10 +113,12 @@ const track = [];
 // many minutes at full size in software (hence no protocol timeout). If Chrome never answers, ask again
 async function capture() {
   for (let attempt = 0; attempt < 6; attempt++) {
+    let timer;                                   // cleared each time: a pending timer would keep every frame in memory
     const got = await Promise.race([
       cdp.send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true }).catch(() => null),
-      new Promise((r) => setTimeout(() => r(null), 900000)),
+      new Promise((r) => { timer = setTimeout(() => r(null), 900000); }),
     ]);
+    clearTimeout(timer);
     if (got && got.data) return got;
     console.error("\nscreenshot not answered, asking again (" + (attempt + 1) + ")");
     await page.bringToFront().catch(() => {});
