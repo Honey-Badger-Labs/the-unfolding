@@ -46,3 +46,4 @@ A stage can show a procedural shape and still be **Observed** if the note says t
 - Leaving the black hole, the camera pulls back to the whole galaxy and dives into a spiral arm. The real change of scale is about a hundred million to one; it is compressed into a few seconds.
 - The cosmic web's growth is brought forward: structure grows steadily through the transition so it can be watched forming, where in nature most of it appears late.
 - Everything in the galaxy merger turns clockwise on screen, as the galaxies orbit; the simulated discs are set to spin the same way (a prograde encounter).
+- The galaxy like ours turns as one: its smooth disc moves with the spiral pattern. In reality its stars orbit at their own speeds and drift through the arms.

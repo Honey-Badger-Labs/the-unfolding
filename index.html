@@ -397,10 +397,10 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     P=mix(bul,q3,isBar)*mix(2.2,1.,q);
     C=mix(vec3(1.,.8,.52),vec3(1.,.93,.8),r2.x)*mix(1.25,1.05,isBar); A=.5;
   }else if(kind<.38){
-    // the old disc: smooth and dim, densest in the middle. Its stars orbit faster than the arm pattern
-    // inside, slower outside, passing through the arms; dark dust lanes lie along the arms' inner edges
+    // the old disc: smooth and dim, densest in the middle; dark dust lanes lie along the arms' inner edges.
+    // (Real stars orbit at their own speeds and pass through the arms; here the disc turns with the pattern)
     float r=min(REDGE,.12-.62*log(1.-.96*r2.x));
-    float th=s.y*TAU-uTime*.05/(r+.25)-gsp*.9/(r+.3);
+    float th=s.y*TAU+pat-gsp*.9/(r+.3);           // turns with the arms, so the whole galaxy moves as one
     P=vec3(r*cos(th),r*sin(th),g.z*.035*puff);
     C=vec3(1.,.86,.66)*mix(.72,.4,smoothstep(.5,2.6,r));
     float ph=mod(th-barA-K*log(max(r,R0)/R0),PI);
@@ -1187,8 +1187,8 @@ void main(){
       jp=planetPos(4); ep=planetPos(2);
       float L0=log(.88);
       float hop=smoothstep(.03,.24,ju);          // the crossing from one giant to the next: back a little, then in again
-      jlm=outw?mix(abs(uZoom)-1.7*sin(PI*hop),L0,smoothstep(.76,1.,ju)):mix(L0,uZoom2,zb);
-      jc=outw?mix(mix(jp,planetPos(5),hop),vec3(0.),smoothstep(.78,.97,ju)):ep*smoothstep(.5,.75,zr);
+      jlm=outw?mix(abs(uZoom)-1.7*sin(PI*hop),L0,smoothstep(.66,1.,ju)):mix(L0,uZoom2,zb);
+      jc=outw?mix(mix(jp,planetPos(5),hop),vec3(0.),smoothstep(.68,.98,ju)):ep*smoothstep(.5,.75,zr);
       if(ia==mid){
         wq=.8*smoothstep(.1,.5,zr)+.2*smoothstep(.5,1.,zr);   // the rocky worlds are still gathering
         gf=1.; sat=outw?smoothstep(1.9,2.6,jlm):0.; dv=outw?1.-smoothstep(1.2,1.8,jlm):1.; jv=smoothstep(.1,.24,ju); wm=exp(jlm);
