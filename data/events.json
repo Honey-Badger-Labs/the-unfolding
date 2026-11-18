@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "about": "The Cosmic Atlas: one record per stage of the journey. The page reads its text, labels, sources and camera framing from here. Ages are years after the Big Bang as [earliest, latest]; null means the stage is not tied to one epoch. 'transition' says how the journey leaves a stage: a morph, a zoom in or out by 'depth' e-folds of scale, or 'out-in' (pull back to the 'via' stage, then dive by 'depth2'). 'clock' is the journey's own clock at that stage, in years after the Big Bang (stages not tied to one epoch still get a place on it); 'tempo' is what the clock says while resting there.",
   "events": [
     {
@@ -381,8 +381,8 @@
       ],
       "camera": {
         "dist": 5.8,
-        "fitW": 3.0,
-        "fitH": 1.9
+        "fitW": 3.9,
+        "fitH": 2.4
       },
       "sound": "a slow tolling over a low rumble of molten rock",
       "transition": {
