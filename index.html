@@ -936,7 +936,7 @@ void moonBirth(out vec3 P,out vec3 C,out float S,out float A){
   // what lies inside the Roche limit rains back, and the rest gathers into the Moon.
   // uMoon is this scene's own clock in seconds; the impact is at T0. Sizes are to scale (Theia about half of
   // Earth's width, the Moon a quarter); the Moon's orbit is drawn about where it formed, a few Earth radii out
-  const float T0=3.2, RE=.5, RT=.26, RM=.135, RO=2.5, TILT=1.;
+  const float T0=5.5, RE=.5, RT=.26, RM=.135, RO=2.5, TILT=1.;
   float t=uMoon, after=t-T0, hit=step(0.,after);
   float phi=2.45;
   vec2 rh=vec2(cos(phi),sin(phi)), tg=vec2(-rh.y,rh.x);
@@ -991,7 +991,7 @@ void moonBirth(out vec3 P,out vec3 C,out float S,out float A){
     d.z=abs(d.z);
     vec2 vel=normalize(-rh*.68+tg*.73);                // it strikes at about 45 degrees
     float back=max(-after,0.);
-    vec2 c2=rh*(RE+RT*.5)-vel*(1.05*back+.05*back*back)+vel*RT*1.5*(1.-exp(-max(after,0.)*3.));
+    vec2 c2=rh*(RE+RT*.5)-vel*2.6*(1.-exp(-.45*back))+vel*RT*1.5*(1.-exp(-max(after,0.)*3.));   // falls in from rest, ever faster
     vec3 c=vec3(c2,0.); c.yz=rot(TILT)*c.yz;
     float day=smoothstep(-.3,.5,dot(d,Ld));
     float tex=sin(d.x*9.+3.*d.y)*sin(d.y*11.-2.*d.z);
@@ -1220,7 +1220,7 @@ void main(){
   }else if(k==GIANT){
     // the star pulses as it throws off its outer layers, and what is left shrinks to a white-hot core
     float pulse=.5+.5*cos((z-.08)/.0917*TAU);
-    gr=mix(1.,.06,smoothstep(.08,.85,z))*(1.+.07*pulse*(1.-smoothstep(.6,.75,z)));
+    gr=mix(1.,.06,smoothstep(.08,.85,z))*(1.+.07*pulse*smoothstep(0.,.1,z)*(1.-smoothstep(.6,.75,z)));
   }
   if(two&&k==QUASAR){
     // first the two galaxies dance (the simulation, up to its third pass), then the black holes' last orbits
@@ -1340,12 +1340,18 @@ void main(){
     float wave=floor((1.-clamp(rb/3.3,0.,1.))*6.)/6.;
     float te=.08+.55*wave+.04*w;
     float fi=ease((z-te)/.32);
-    if(r2.y<.035)fi=ease((z-.85)/.15);          // the core stays at the centre, white-hot, to become the central star
+    if(r2.y<.035)fi=0.;                         // the core stays at the centre, white-hot (it hands over to the central star below)
     if(r2.y<.5)Ca=mix(Ca,vec3(.75,.88,1.25),smoothstep(.3,.85,z));
     float front=4.8*smoothstep(.5,1.,z);
     vec3 dull=vec3(.5,.22,.12)*.5*(.5+r2.x);
     Cb=mix(dull,Cb,smoothstep(rb-.25,rb+.25,front));
     P=mix(Pa,Pb,fi); C=mix(Ca,Cb,fi); S=mix(Sa,Sb,fi); A=mix(Aa,Ab,fi);
+    if(r2.y<.035){
+      // the core's particles fade out at the centre and fade back in at their places in the nebula
+      bool late=z>.92;
+      P=late?Pb:Pa; C=late?Cb:Ca; S=late?Sb:Sa;
+      A=late?Ab*smoothstep(.92,1.,z):Aa*(1.-smoothstep(.84,.92,z));
+    }
   }else{
     // a morph: each particle travels from its place in one shape to its place in the next
     float f=ease(z*1.5-.5*w);
@@ -1808,8 +1814,8 @@ function frame(now){
   if(JUP>=0&&Math.abs(T-JUP)<1)spinT+=dt;else spinT=0;
   gl.uniform1f(U.uSpin,spinT);
   if(MOONK<0||T<MOONK-.2||T>MOONK+1.05)moonT=0;
-  else if(T<MOONK)moonT=2.2*(1-(MOONK-T)/.2);
-  else moonT=Math.max(2.2,moonT)+dt;
+  else if(T<MOONK)moonT=0;              // waiting, far off, while we arrive
+  else moonT+=dt;
   gl.uniform1f(U.uMoon,moonT);
   gl.uniform1f(U.uT,T);
   gl.uniform1f(U.uTime,time);
