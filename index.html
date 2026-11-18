@@ -319,8 +319,8 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   // mq is how far the merger has gone. Their stars move as computed by a restricted N-body simulation
   // (stars feel both galaxies' dark-matter halos; the halos pull and drag on each other). Three passes raise
   // tidal arcs and a bridge; the cores and their black holes spiral together ever faster and merge
-  // from the moment the neighbour is near (sample 15) to just after the black holes merge (sample 90)
-  float f=mix(15.,90.,mq);
+  // from the moment the neighbour is near (sample 15) to the settling remnant (sample 100)
+  float f=mix(15.,100.,mq);
   vec3 c1=simAt(0,f), c2=simAt(1,f);
   float sep=length(c2-c1);
   // once the black holes are together, a glow where they merge
@@ -1225,8 +1225,8 @@ void main(){
   if(two&&k==QUASAR){
     // first the two galaxies dance (the simulation, up to its third pass), then the black holes' last orbits
     // the simulation runs to the end: three passes, then the cores spiral together and merge
-    mq=smoothstep(0.,.8,z);
-    bu=z<.66?-1.:smoothstep(.66,.97,z);          // the merged remnant's spin then winds the new spiral's arms
+    mq=clamp(z/.97,0.,1.)*clamp(z/.97,0.,1.)*(3.-2.*clamp(z/.97,0.,1.))*.5+clamp(z/.97,0.,1.)*.5;   // never pauses: the remnant keeps turning while the spiral forms
+    bu=z<.6?-1.:smoothstep(.6,.97,z);          // the merged remnant's spin then winds the new spiral's arms
     bal=0.;
   }
   shape(ia,Pa,Ca,Sa,Aa);
@@ -1356,8 +1356,8 @@ void main(){
       // own differential rotation winds the arms into existence (milkyWay, through gq)
       // No particle travels between the two: the remnant dissolves where it is while the young spiral, turning
       // with the black holes, brightens in the same place (each particle fades out of one and into the other)
-      f=ease((z-.78)*5.-.3*w);                  // the new galaxy appears once the cores have merged
-      if(r2.y<.05)f=ease((z-.86)*9.);           // the black hole stays until the spiral has formed
+      f=ease((z-.7)*4.2-.3*w);                  // the new galaxy forms out of the remnant as the cores merge
+      if(r2.y<.05)f=ease((z-.84)*9.);           // the black hole stays until the spiral has formed
       swirl=0.;
       bool late=f>.5;
       P=late?Pb:Pa; C=late?Cb:Ca; S=late?Sb:Sa;
