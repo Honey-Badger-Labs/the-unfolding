@@ -110,7 +110,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.9</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.10</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -312,17 +312,7 @@ vec3 simAt(int i,float f){
   return mix(texelFetch(uSim,ivec2(a,i),0).xyz,texelFetch(uSim,ivec2(b,i),0).xyz,fract(f));
 }
 
-vec2 windUp(vec2 q,bool hole){
-  // the last orbits wind everything up: material near the centre (the black holes and the galaxies' cores) turns
-  // with the full spin of the black holes and draws in with them as they close; the outskirts lag behind. As the
-  // two close in, they sit deeper in the turning core, so their orbit speeds up
-  float W=exp(-dot(q,q)/5.);
-  float shrink=mix(1.,pow(max(1.-bu,0.),.35),hole?1.:W);   // the black holes themselves close all the way
-  q*=shrink;
-  float Wn=hole?1.:exp(-dot(q,q)/5.);
-  float turned=binarySpin()-BTURNS*TAU;            // how far they have turned (clockwise), up to BTURNS turns
-  return rot(turned*(.15+.85*Wn))*q;
-}
+float binaryTurned(){return -(BTURNS*TAU-binarySpin());}   // how far the pair has turned (negative: clockwise)
 
 void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   // A young, gas-rich galaxy with a quasar at its heart, and a second galaxy with its own black hole falling in.
@@ -338,8 +328,12 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   if(bu>=0.){
     // the last orbits: separation shrinks and the orbit speeds up (roughly as gravitational waves drive it),
     // until the two merge. Stars near each black hole are dragged with it; the outskirts lag behind
+    // their separation shrinks and their orbit turns ever faster, clockwise, until they merge
     vec3 cm=.5*(c1+c2);
-    c1.xy=cm.xy+windUp(c1.xy-cm.xy,true); c2.xy=cm.xy+windUp(c2.xy-cm.xy,true);
+    float a=bsep*pow(max(1.-bu,0.),.4);
+    float ph=bphi+binaryTurned();
+    vec3 dir=vec3(cos(ph),sin(ph),0.);
+    c1=cm-.5*a*dir; c2=cm+.5*a*dir;
     flare=exp(-pow((bu-1.)/.05,2.));
   }
   vec3 view=simAt(0,0.)*(1.-smoothstep(0.,.45,mq));  // the camera starts on the young galaxy, then frames both
@@ -369,11 +363,17 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
     if(bu>=0.){
       // the remnant is wound up by the black holes' spin: stars near the centre turn with them, the outskirts
       // lag behind, and the inner parts draw in as the two black holes close
+      // each galaxy's core rides with its black hole, so the two bright cores close in and whirl round each
+      // other faster and faster; the rest of the remnant is only gently turned the same way, trailing
       vec3 cm=.5*(s1+s2);
-      vec2 own=(i<2049?s1:s2).xy-cm.xy;
-      float d=length(p.xy-cm.xy-own);
-      // the densest heart of each galaxy follows its black hole a little; the rest trails behind as arms
-      p.xy=cm.xy+windUp(p.xy-cm.xy,false)+(windUp(own,true)-windUp(own,false))*.35*exp(-d*d/.6);
+      vec3 own=i<2049?s1:s2, nw=i<2049?c1:c2;
+      float dph=binaryTurned();
+      vec2 loc=p.xy-own.xy;
+      float wc=exp(-dot(loc,loc)/.45);
+      vec2 core=nw.xy+rot(-dph)*loc*mix(1.,.55,bu);
+      vec2 rr=p.xy-cm.xy;
+      vec2 outer=cm.xy+rot(-dph*.08*exp(-dot(rr,rr)/6.))*rr;
+      p.xy=mix(outer,core,wc);
     }
     vec3 p0=simAt(i,0.)-(i<2049?simAt(0,0.):simAt(1,0.));
     float r0=length(p0);
@@ -1250,13 +1250,13 @@ void main(){
   }
   if(two&&k==QUASAR){
     // first the two galaxies dance (the simulation, up to its third pass), then the black holes' last orbits
-    mq=.86*smoothstep(0.,.5,z);
+    mq=.86*smoothstep(0.,.45,z);
     float F0=.86*float(SIMN-1);
     vec3 d=simAt(1,F0)-simAt(0,F0);
     bsep=length(d); bphi=atan(d.y,d.x);
-    bu=z<.5?-1.:smoothstep(.5,.8,z);
+    bu=z<.45?-1.:smoothstep(.45,.84,z);           // the last orbits get a long stretch of their own
     float barNow=.5-uTime*.025;
-    bal=(mod(bphi-barNow+PI*.5,PI)-PI*.5)*(1.-smoothstep(.84,1.,z));
+    bal=(mod(bphi-barNow+PI*.5,PI)-PI*.5)*(1.-smoothstep(.88,1.,z));
   }
   shape(ia,Pa,Ca,Sa,Aa);
   float kp=keep;
@@ -1329,18 +1329,24 @@ void main(){
     vec3 q=Pa*mix(vec3(1.),vec3(2.7/uField.x,2.7/uField.y,1.2),smoothstep(0.,.7,z));   // the same matter, seen from further back
     float ease0=smoothstep(0.,.18,z);           // at rest (z=0) exactly the scene the opening arrived at
     q+=(flow(q*2.3+5.,0.)*.11+flow(q.zxy*4.1+2.,0.)*.05)*ease0;   // no two voids open alike
-    float D=exp(-uGrow*(1.-z))*ease0;
+    // the volume turns as the web does, so it is seen in depth from the start, never as a flat sheet
+    float tv=smoothstep(0.,.5,z);
+    q.xz=rot((.6+uTime*.04)*tv)*q.xz; q.yz=rot(.42*tv)*q.yz; q.xy=rot(.25*tv)*q.xy;
+    // structure grows steadily so it can be watched forming (in nature it grows as time^(2/3); here it is
+    // brought forward so the clumping shows early rather than all at the end)
+    float D=mix(exp(-uGrow*(1.-z)),pow(z,1.6),.75)*ease0;
     D=1.-pow(1.-D,1.5);                          // it settles as it arrives
     P=q+D*(Pb-q);
     float glow=1.-smoothstep(.02,.34,z);         // the afterglow reddens and fades as space stretches its light
-    vec3 dark=vec3(.36,.3,.62)*.8;              // unlit gas, shown faintly so gravity's work can be seen
+    vec3 dark=vec3(.4,.32,.7)*1.25;             // unlit gas, shown faintly so gravity's work can be seen
     float ti=.76+.14*ig+.03*w;
     float lit=smoothstep(ti,ti+.07,z);
     float flash=exp(-pow((z-ti-.04)/.045,2.));
+    dark*=.8+2.2*D;                              // gas brightens a little as it gathers, so the clumping reads
     C=mix(dark,Ca*mix(vec3(1.),vec3(1.,.35,.2),smoothstep(0.,.3,z)),glow);
     C=mix(C,Cb,lit)+vec3(.45,.65,1.2)*flash*.7;
     S=mix(Sa,Sb,smoothstep(.05,.5,z));
-    A=mix(mix(.36,Aa,glow),Ab,lit);
+    A=mix(mix(.5,Aa,glow),Ab,lit);
   }else if(k==WORLDS){
     // the Sun's far future: the star swells and reddens while we close in on the inner system.
     // Each orbit is swallowed as the surface reaches it; Mars is left just outside
@@ -1379,8 +1385,8 @@ void main(){
       // own differential rotation winds the arms into existence (milkyWay, through gq)
       // No particle travels between the two: the remnant dissolves where it is while the young spiral, turning
       // with the black holes, brightens in the same place (each particle fades out of one and into the other)
-      f=ease((z-.52)*3.2-.35*w);
-      if(r2.y<.05)f=ease((z-.79)*9.);           // the black holes stay until they have merged
+      f=ease((z-.72)*4.4-.3*w);                 // the new galaxy appears as the cores finish merging
+      if(r2.y<.05)f=ease((z-.84)*9.);           // the black holes stay until they have merged
       swirl=0.;
       bool late=f>.5;
       P=late?Pb:Pa; C=late?Cb:Ca; S=late?Sb:Sa;
@@ -1458,7 +1464,7 @@ var SIM_SAMPLES=101;
     for(var i=from;i<to;i++){
       var r=.2+1.9*Math.pow(rnd(),.8),th=rnd()*2*Math.PI,z=(rnd()-.5)*.04;
       var vc=Math.sqrt(M*r*r/Math.pow(r*r+EPS2,1.5));
-      var lp=[r*Math.cos(th),r*Math.sin(th),z],lv=[-Math.sin(th)*vc,Math.cos(th)*vc,0];
+      var lp=[r*Math.cos(th),r*Math.sin(th),z],lv=[Math.sin(th)*vc,-Math.cos(th)*vc,0];   // clockwise, the same way the galaxies orbit
       [lp,lv].forEach(function(u,k){
         var y1=u[1]*ci-u[2]*si,z1=u[1]*si+u[2]*ci,x2=u[0]*cn-y1*sn,y2=u[0]*sn+y1*cn;
         var o=k?v:p,base=k?cv:c;
@@ -1856,7 +1862,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.9 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.10 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

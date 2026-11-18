@@ -44,3 +44,5 @@ A stage can show a procedural shape and still be **Observed** if the note says t
 - During the dark ages the unlit gas is drawn faintly so that gravity's work can be seen. In reality there was nothing to see in visible light. The first stars are lit about 100 million years in, densest knots first.
 - The galaxy turns clockwise with trailing arms. Old stars orbit through the arm pattern, faster than it inside and slower outside; gas clouds, star-forming regions and young clusters are drawn riding with the arms. The halo's globular clusters are placed at random.
 - Leaving the black hole, the camera pulls back to the whole galaxy and dives into a spiral arm. The real change of scale is about a hundred million to one; it is compressed into a few seconds.
+- The cosmic web's growth is brought forward: structure grows steadily through the transition so it can be watched forming, where in nature most of it appears late.
+- Everything in the galaxy merger turns clockwise on screen, as the galaxies orbit; the simulated discs are set to spin the same way (a prograde encounter).
