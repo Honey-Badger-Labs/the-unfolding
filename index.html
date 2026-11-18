@@ -110,7 +110,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radiu
 </head>
 <body>
 <canvas id="c" aria-label="Particle field that changes shape as you move through cosmic time"></canvas>
-<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.7</span></div>
+<div class="mark"><span><b>The Unfolding</b></span><span id="fps">prototype 3.8</span></div>
 <div class="clock"><span id="clock"></span><span id="fromnow"></span><span id="rate"></span></div>
 
 <div class="hud">
@@ -298,7 +298,7 @@ void protocluster(out vec3 P,out vec3 C,out float S,out float A){
   }
 }
 
-const int SIMN=86;                      // moments stored per star (keep in step with SIM_SAMPLES below)
+const int SIMN=101;                      // moments stored per star (keep in step with SIM_SAMPLES below)
 vec3 simAt(int i,float f){
   // where star i of the merger simulation is at moment f (0 to SIMN-1), in the simulation's own units
   f=clamp(f,0.,float(SIMN-1));
@@ -315,23 +315,23 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   float f=mq*float(SIMN-1);
   vec3 c1=simAt(0,f), c2=simAt(1,f);
   float sep=length(c2-c1);
-  float fin=smoothstep(.86,.97,mq);                  // the last orbits of the two black holes, then one
+  float fin=smoothstep(.88,.98,mq);                  // the last orbits of the two black holes, then one
   vec3 cm=.5*(c1+c2);
   c1=mix(c1,cm,fin); c2=mix(c2,cm,fin);
   vec3 view=simAt(0,0.)*(1.-smoothstep(0.,.45,mq));  // the camera starts on the young galaxy, then frames both
   const float SC=.85;
   float burst=exp(-sep*sep*.9)*smoothstep(.05,.2,mq); // close passes squeeze the gas: a burst of new stars
-  float flare=exp(-pow((mq-.97)/.035,2.));            // the two black holes merge
+  float flare=exp(-pow((mq-.98)/.03,2.));             // the two black holes merge
   float kind=r3.z;
   if(r2.y<.05){
     // the black holes: brilliant points where gas spirals in
     vec3 c=r3.x<.5?c1:c2;
     P=(c+g*.025-view)*SC;
-    C=vec3(1.3,1.35,1.5)*(1.+.8*burst+2.5*flare)*(r3.x<.5?1.:.85);
+    C=vec3(1.3,1.35,1.5)*(1.+.8*burst+1.2*flare)*(r3.x<.5?1.:.85);
     S=.032; A=.9;
   }else if(r2.x<.18){
-    // twin jets from the first galaxy's quasar; they falter in the chaos and return once the merger feeds it
-    float on=1.-smoothstep(.1,.3,mq)+smoothstep(.85,1.,mq);
+    // twin jets from the first galaxy's quasar; they fade as the merger begins, and do not return
+    float on=1.-smoothstep(.1,.3,mq);
     float side=r3.y<.5?1.:-1.;
     float h=fract(r2.z+uTime*.1*(.6+r3.x));
     float wj=.015+.1*h*h+.35*smoothstep(.8,1.,h);
@@ -851,11 +851,11 @@ void worlds(out vec3 P,out vec3 C,out float S,out float A){
         d.z=abs(d.z);                                  // the face towards us
         vec3 qn=d; qn.yz=rot(-1.12)*qn.yz;             // the planet's own frame: qn.z is the spin axis
         float lat=asin(clamp(qn.z,-1.,1.));
-        vec3 col=mix(vec3(.66,.45,.24),vec3(1.,.88,.62),smoothstep(.2,.8,.5+.5*cos(lat*14.+.7*sin(lat*5.))));
-        col=mix(col,vec3(.9,.7,.42),.3*exp(-lat*lat*40.));
-        col=mix(col,vec3(.62,.64,.56),smoothstep(1.,1.4,abs(lat)));
+        vec3 col=mix(vec3(.3,.46,.78),vec3(.66,.8,1.),smoothstep(.2,.8,.5+.5*cos(lat*14.+.7*sin(lat*5.))));
+        col=mix(col,vec3(.78,.86,1.),.3*exp(-lat*lat*40.));
+        col=mix(col,vec3(.5,.62,.8),smoothstep(1.,1.4,abs(lat)));
         // the hemisphere in winter turns blue: its cloud tops lie deeper under clear air (as Cassini saw the north)
-        col=mix(col,mix(vec3(.42,.6,.92),vec3(.62,.76,.98),.5+.5*cos(lat*14.)),smoothstep(.12,.5,lat));
+        col=mix(col,mix(vec3(.36,.56,.95),vec3(.6,.76,1.),.5+.5*cos(lat*14.)),smoothstep(.12,.5,lat));
         off=qn*RP; off.z*=.9;                          // flattened by its spin
         if(r3.x<.07){
           // aurora round the north pole (it shines in ultraviolet: shown here in false colour)
@@ -1175,9 +1175,9 @@ void main(){
     if(k==JUPITER){
       jp=planetPos(4); ep=planetPos(2);
       float L0=log(.88);
-      float hop=smoothstep(.03,.27,ju);          // the crossing from one giant to the next: back a little, then in again
-      jlm=outw?mix(abs(uZoom)-1.7*sin(PI*hop),L0,smoothstep(.66,1.,ju)):mix(L0,uZoom2,zb);
-      jc=outw?mix(mix(jp,planetPos(5),hop),vec3(0.),smoothstep(.68,.96,ju)):ep*smoothstep(.5,.75,zr);
+      float hop=smoothstep(.03,.24,ju);          // the crossing from one giant to the next: back a little, then in again
+      jlm=outw?mix(abs(uZoom)-1.7*sin(PI*hop),L0,smoothstep(.76,1.,ju)):mix(L0,uZoom2,zb);
+      jc=outw?mix(mix(jp,planetPos(5),hop),vec3(0.),smoothstep(.78,.97,ju)):ep*smoothstep(.5,.75,zr);
       if(ia==mid){
         wq=.8*smoothstep(.1,.5,zr)+.2*smoothstep(.5,1.,zr);   // the rocky worlds are still gathering
         gf=1.; sat=outw?smoothstep(1.9,2.6,jlm):0.; dv=outw?1.-smoothstep(1.2,1.8,jlm):1.; jv=smoothstep(.1,.24,ju); wm=exp(jlm);
@@ -1211,7 +1211,7 @@ void main(){
     float pulse=.5+.5*cos((z-.08)/.0917*TAU);
     gr=mix(1.,.06,smoothstep(.08,.85,z))*(1.+.07*pulse*(1.-smoothstep(.6,.75,z)));
   }
-  if(two&&k==QUASAR)mq=smoothstep(0.,.64,z);       // first the two galaxies dance and merge
+  if(two&&k==QUASAR)mq=smoothstep(0.,.66,z);       // first the two galaxies dance and merge
   shape(ia,Pa,Ca,Sa,Aa);
   float kp=keep;
   mq=0.;
@@ -1219,7 +1219,7 @@ void main(){
   float Rs=mix(.11,1.3,pow(zs,1.15));              // the swelling Sun's radius (worlds to red giant)
   if(two){
     if(k==WORLDS){gr=Rs/1.3;gsh=smoothstep(.74,1.,z);}
-    if(k==QUASAR)gq=smoothstep(.62,1.,z);          // after the merger, the spiral grows out of the central cloud
+    if(k==QUASAR)gq=mix(.4,1.,smoothstep(.64,1.,z)); // after the merger, the turning disc (already wide) winds its arms
     shape(ib,Pb,Cb,Sb,Ab);
     gr=1.;gsh=1.;gq=1.;
   }
@@ -1327,11 +1327,18 @@ void main(){
     float f=ease(z*1.5-.5*w);
     float swirl=1.;
     if(k==QUASAR){
-      // the merged galaxy settles into a central cloud, bright with new stars, then the spiral grows out of it
-      f=ease((z-.6)*4.2-.6*w);
-      swirl=.35;
-    }
-    P=mix(Pa,Pb,f); C=mix(Ca,Cb,f); S=mix(Sa,Sb,f); A=mix(Aa,Ab,f);
+      // the merged galaxy settles into a turning disc: every star circles the core the way the galaxy spins
+      // (clockwise as we see it), drawing in as it goes, instead of flying straight across. Then the disc's
+      // own differential rotation winds the arms into existence (milkyWay, through gq)
+      f=ease((z-.62)*5.-.25*w);
+      swirl=0.;
+      float ra=length(Pa.xy), rb=length(Pb.xy);
+      float ta=atan(Pa.y,Pa.x), tb=atan(Pb.y,Pb.x);
+      float dth=mod(tb-ta,TAU)-TAU;               // always the clockwise way round
+      float th=ta+dth*f, rr=mix(ra,rb,f);
+      P=vec3(rr*cos(th),rr*sin(th),mix(Pa.z,Pb.z,f));
+    }else P=mix(Pa,Pb,f);
+    C=mix(Ca,Cb,f); S=mix(Sa,Sb,f); A=mix(Aa,Ab,f);
     float sw=sin(PI*f)*swirl;
     P+=flow(P*.9+w*3.,uTime*.5)*.16*sw;
     P.xy=rot(sw*(w-.35)*.9)*P.xy;
@@ -1391,9 +1398,9 @@ var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass"
 // orbit; a drag near close approach stands in for dynamical friction, so the orbit decays and they merge.
 // 4094 stars on circular orbits in the two discs feel both galaxies. Stored as a float texture: row 0 and 1
 // the galaxies' centres, rows 2.. the stars; one column per moment (SIM_SAMPLES of them)
-var SIM_SAMPLES=86;
+var SIM_SAMPLES=101;
 (function simulateMerger(){
-  var NP=4094,M=1,EPS2=.22*.22,EC2=.3*.3,K=.3,DT=.02,STEPS=1700,EVERY=STEPS/(SIM_SAMPLES-1);
+  var NP=4094,M=1,EPS2=.22*.22,EC2=.3*.3,K=.2,DT=.02,STEPS=2600,EVERY=STEPS/(SIM_SAMPLES-1);
   var x=987654321;function rnd(){x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;}
   var rx=-5.5,ry=3.4,vm=Math.sqrt(2*2*M/Math.hypot(rx,ry))*.9;
   var c=[-rx/2,-ry/2,0, rx/2,ry/2,0], cv=[-vm/2,0,0, vm/2,0,0];
@@ -1801,7 +1808,7 @@ function frame(now){
     warm++;
   }
   frames++;acc+=dt;
-  if(acc>=1){fpsEl.textContent="prototype 3.7 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
+  if(acc>=1){fpsEl.textContent="prototype 3.8 / "+Math.round(frames/acc)+" fps";frames=0;acc=0;}
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
