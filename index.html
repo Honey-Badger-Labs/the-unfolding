@@ -317,27 +317,16 @@ float binaryTurned(){return -(BTURNS*TAU-binarySpin());}   // how far the pair h
 void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
   // A young, gas-rich galaxy with a quasar at its heart, and a second galaxy with its own black hole falling in.
   // mq is how far the merger has gone. Their stars move as computed by a restricted N-body simulation
-  // (Toomre and Toomre's method: stars feel the pull of both galaxies; the galaxies feel each other and a drag
-  // that stands in for dynamical friction). Two passes raise tidal tails and a bridge; the black holes circle
-  // each other ever closer and merge, and the merger feeds the quasar
-  float f=mq*float(SIMN-1);
+  // (stars feel both galaxies' dark-matter halos; the halos pull and drag on each other). Three passes raise
+  // tidal arcs and a bridge; the cores and their black holes spiral together ever faster and merge
+  // from the moment the neighbour is near (sample 15) to just after the black holes merge (sample 90)
+  float f=mix(15.,90.,mq);
   vec3 c1=simAt(0,f), c2=simAt(1,f);
   float sep=length(c2-c1);
-  vec3 s1=c1, s2=c2;                                 // where the simulation has them
-  float flare=0.;
-  if(bu>=0.){
-    // the last orbits: separation shrinks and the orbit speeds up (roughly as gravitational waves drive it),
-    // until the two merge. Stars near each black hole are dragged with it; the outskirts lag behind
-    // their separation shrinks and their orbit turns ever faster, clockwise, until they merge
-    vec3 cm=.5*(c1+c2);
-    float a=bsep*pow(max(1.-bu,0.),.4);
-    float ph=bphi+binaryTurned();
-    vec3 dir=vec3(cos(ph),sin(ph),0.);
-    c1=cm-.5*a*dir; c2=cm+.5*a*dir;
-    flare=exp(-pow((bu-1.)/.05,2.));
-  }
-  vec3 view=simAt(0,0.)*(1.-smoothstep(0.,.45,mq));  // the camera starts on the young galaxy, then frames both
-  const float SC=.85;
+  // once the black holes are together, a glow where they merge
+  float flare=exp(-pow(sep/.15,2.))*smoothstep(.55,.85,mq);
+  vec3 view=simAt(0,15.)*(1.-smoothstep(0.,.45,mq));  // the camera starts on the young galaxy, then frames both
+  const float SC=1.15;
   float burst=exp(-sep*sep*.9)*smoothstep(.05,.2,mq); // close passes squeeze the gas: a burst of new stars
   float kind=r3.z;
   if(r2.y<.05){
@@ -360,21 +349,6 @@ void youngGalaxy(out vec3 P,out vec3 C,out float S,out float A){
     // the stars and gas of the two discs
     int i=2+int(floor(r3.y*4094.));
     vec3 p=simAt(i,f);
-    if(bu>=0.){
-      // the remnant is wound up by the black holes' spin: stars near the centre turn with them, the outskirts
-      // lag behind, and the inner parts draw in as the two black holes close
-      // each galaxy's core rides with its black hole, so the two bright cores close in and whirl round each
-      // other faster and faster; the rest of the remnant is only gently turned the same way, trailing
-      vec3 cm=.5*(s1+s2);
-      vec3 own=i<2049?s1:s2, nw=i<2049?c1:c2;
-      float dph=binaryTurned();
-      vec2 loc=p.xy-own.xy;
-      float wc=exp(-dot(loc,loc)/.45);
-      vec2 core=nw.xy+rot(-dph)*loc*mix(1.,.55,bu);
-      vec2 rr=p.xy-cm.xy;
-      vec2 outer=cm.xy+rot(-dph*.08*exp(-dot(rr,rr)/6.))*rr;
-      p.xy=mix(outer,core,wc);
-    }
     vec3 p0=simAt(i,0.)-(i<2049?simAt(0,0.):simAt(1,0.));
     float r0=length(p0);
     float hs=hash13(vec3(float(i),3.,1.));
@@ -1250,13 +1224,10 @@ void main(){
   }
   if(two&&k==QUASAR){
     // first the two galaxies dance (the simulation, up to its third pass), then the black holes' last orbits
-    mq=.86*smoothstep(0.,.45,z);
-    float F0=.86*float(SIMN-1);
-    vec3 d=simAt(1,F0)-simAt(0,F0);
-    bsep=length(d); bphi=atan(d.y,d.x);
-    bu=z<.45?-1.:smoothstep(.45,.84,z);           // the last orbits get a long stretch of their own
-    float barNow=.5-uTime*.025;
-    bal=(mod(bphi-barNow+PI*.5,PI)-PI*.5)*(1.-smoothstep(.88,1.,z));
+    // the simulation runs to the end: three passes, then the cores spiral together and merge
+    mq=smoothstep(0.,.8,z);
+    bu=z<.66?-1.:smoothstep(.66,.97,z);          // the merged remnant's spin then winds the new spiral's arms
+    bal=0.;
   }
   shape(ia,Pa,Ca,Sa,Aa);
   float kp=keep;
@@ -1385,8 +1356,8 @@ void main(){
       // own differential rotation winds the arms into existence (milkyWay, through gq)
       // No particle travels between the two: the remnant dissolves where it is while the young spiral, turning
       // with the black holes, brightens in the same place (each particle fades out of one and into the other)
-      f=ease((z-.72)*4.4-.3*w);                 // the new galaxy appears as the cores finish merging
-      if(r2.y<.05)f=ease((z-.84)*9.);           // the black holes stay until they have merged
+      f=ease((z-.78)*5.-.3*w);                  // the new galaxy appears once the cores have merged
+      if(r2.y<.05)f=ease((z-.86)*9.);           // the black hole stays until the spiral has formed
       swirl=0.;
       bool late=f>.5;
       P=late?Pb:Pa; C=late?Cb:Ca; S=late?Sb:Sa;
@@ -1447,23 +1418,27 @@ if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfo
 gl.useProgram(prog);
 var U={};["uT","uTime","uAspect","uPx","uCam","uAlpha","uField","uShift","uPass","uZoom","uSpin","uZoom2","uVia","uGrow","uMoon","uSim"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
 
-// The galaxy merger, simulated once on load (about a tenth of a second): Toomre and Toomre's restricted method.
-// Two galaxies (softened point masses, standing in for bulge, halo and black hole) fall together on a bound
-// orbit; a drag near close approach stands in for dynamical friction, so the orbit decays and they merge.
-// 4094 stars on circular orbits in the two discs feel both galaxies. Stored as a float texture: row 0 and 1
-// the galaxies' centres, rows 2.. the stars; one column per moment (SIM_SAMPLES of them)
+// The galaxy merger, simulated once on load (a fraction of a second). Each galaxy is a dark-matter halo
+// (a Hernquist profile, mass M, scale A) with a black hole at its centre and a disc of stars. The two halos
+// pull on each other with the mass each encloses, and each drags on the other as it ploughs through it
+// (Chandrasekhar's dynamical friction, proportional to the density it moves through): the orbit decays on its
+// own, through three passes, and the cores spiral together ever faster until they merge. The 4094 stars feel
+// both halos (Toomre and Toomre's restricted method). Stored as a float texture: rows 0 and 1 the centres (the
+// black holes), rows 2.. the stars; one column per moment (SIM_SAMPLES of them)
 var SIM_SAMPLES=101;
 (function simulateMerger(){
-  var NP=4094,M=1,EPS2=.22*.22,EC2=.3*.3,K=.2,DT=.02,STEPS=2600,EVERY=STEPS/(SIM_SAMPLES-1);
+  var NP=4094,M=1,A=.6,EPS2=.05*.05,CF=6,DT=.02,STEPS=2000,EVERY=STEPS/(SIM_SAMPLES-1);
   var x=987654321;function rnd(){x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;}
-  var rx=-5.5,ry=3.4,vm=Math.sqrt(2*2*M/Math.hypot(rx,ry))*.9;
+  function Menc(r){return M*r*r/((r+A)*(r+A));}
+  function rho(r){r=Math.max(r,1e-3);return M*A/(2*Math.PI*r*Math.pow(r+A,3));}
+  var rx=-7,ry=2.4,vm=Math.sqrt(2*2*M/Math.hypot(rx,ry))*.75;
   var c=[-rx/2,-ry/2,0, rx/2,ry/2,0], cv=[-vm/2,0,0, vm/2,0,0];
   var p=new Float64Array(NP*3),v=new Float64Array(NP*3),a=new Float64Array(NP*3);
   function disc(g,inc,node,from,to){
     var ci=Math.cos(inc),si=Math.sin(inc),cn=Math.cos(node),sn=Math.sin(node);
     for(var i=from;i<to;i++){
-      var r=.2+1.9*Math.pow(rnd(),.8),th=rnd()*2*Math.PI,z=(rnd()-.5)*.04;
-      var vc=Math.sqrt(M*r*r/Math.pow(r*r+EPS2,1.5));
+      var r=Math.min(.15+.8*-Math.log(1-rnd()*.95),2.2),th=rnd()*2*Math.PI,z=(rnd()-.5)*.04;
+      var vc=Math.sqrt(Menc(r)/r);
       var lp=[r*Math.cos(th),r*Math.sin(th),z],lv=[Math.sin(th)*vc,-Math.cos(th)*vc,0];   // clockwise, the same way the galaxies orbit
       [lp,lv].forEach(function(u,k){
         var y1=u[1]*ci-u[2]*si,z1=u[1]*si+u[2]*ci,x2=u[0]*cn-y1*sn,y2=u[0]*sn+y1*cn;
@@ -1472,18 +1447,20 @@ var SIM_SAMPLES=101;
       });
     }
   }
-  disc(0,.25,0,0,NP/2|0);disc(1,.65,2,NP/2|0,NP);
+  disc(0,.3,0,0,NP/2|0);disc(1,.7,2,NP/2|0,NP);
   var ca=[0,0,0,0,0,0];
   function accC(){
-    var dx=c[3]-c[0],dy=c[4]-c[1],dz=c[5]-c[2],r2=dx*dx+dy*dy+dz*dz,r=Math.sqrt(r2),f=M/Math.pow(r2+EC2,1.5);
-    var fr=K/(1+Math.pow(r,4));
-    for(var k=0;k<3;k++){var d=[dx,dy,dz][k],mv=(cv[k]+cv[k+3])/2;ca[k]=f*d-fr*(cv[k]-mv);ca[k+3]=-f*d-fr*(cv[k+3]-mv);}
+    var dx=c[3]-c[0],dy=c[4]-c[1],dz=c[5]-c[2],r=Math.sqrt(dx*dx+dy*dy+dz*dz+EPS2),g=Menc(r)/(r*r*r);
+    var vx=cv[3]-cv[0],vy=cv[4]-cv[1],vz=cv[5]-cv[2],vv=Math.sqrt(vx*vx+vy*vy+vz*vz)+1e-3;
+    var f=CF*rho(r)*M/(vv*vv*vv+.15);
+    var d=[dx,dy,dz],w=[vx,vy,vz];
+    for(var k=0;k<3;k++){ca[k]=g*d[k]+.5*f*w[k];ca[k+3]=-g*d[k]-.5*f*w[k];}
   }
   function accP(){
     for(var i=0;i<NP;i++){
       var ax=0,ay=0,az=0;
       for(var gk=0;gk<2;gk++){
-        var dx=c[gk*3]-p[i*3],dy=c[gk*3+1]-p[i*3+1],dz=c[gk*3+2]-p[i*3+2],r2=dx*dx+dy*dy+dz*dz+EPS2,f=M/(r2*Math.sqrt(r2));
+        var dx=c[gk*3]-p[i*3],dy=c[gk*3+1]-p[i*3+1],dz=c[gk*3+2]-p[i*3+2],r=Math.sqrt(dx*dx+dy*dy+dz*dz+EPS2),f=Menc(r)/(r*r*r);
         ax+=f*dx;ay+=f*dy;az+=f*dz;
       }
       a[i*3]=ax;a[i*3+1]=ay;a[i*3+2]=az;
