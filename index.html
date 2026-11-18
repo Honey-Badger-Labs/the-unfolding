@@ -391,7 +391,7 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     // bulge and bar: dense, bright, old and warm; a big glowing cloud before it settles.
     // The bulge is brightest at its very centre and fades into a wide soft glow
     vec3 q3=g*vec3(.48,.15,.13);
-    q3.xy=rot(-barA+gsp*1.4-(bu>=0.?binarySpin()+bal:0.))*q3.xy;
+    q3.xy=rot(-barA+gsp*1.4)*q3.xy;
     vec3 bul=g*vec3(.34,.34,.25)*(.3+1.25*r3.y*r3.y);
     float isBar=step(.5,r2.x);
     P=mix(bul,q3,isBar)*mix(2.2,1.,q);
@@ -434,7 +434,7 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     float su=r2.z;
     if(spur>.5)tr=.08+.8*hash13(vec3(sid,a0,5.));
     float home=0.;
-    if(knot>.5&&kid<1.&&a0<.1){home=1.;tr=(GRH-rs)/(REDGE-rs);}   // the star-forming region we will dive into
+    if(knot>.5&&kid<3.&&a0<.1){home=1.;tr=(GRH-rs)/(REDGE-rs);kh=vec3(tr,.1,.1);}   // the star-forming region we will dive into: a big pink clump
     float r=rs+(REDGE-rs)*clamp(tr,0.,1.);
     float edge=smoothstep(rs,REDGE,r);         // 0 at the arm's root, 1 at the rim
     float th=a0+barA+K*log(r/R0);
@@ -448,12 +448,6 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
     th+=cloud*g.y*.05/r;
     // formation: no arm structure at first, then differential spin winds the arms into place
     th+=scatter*(r3.y-.5)*TAU*.9+nq*nq*3.5/(r*spread+.25);
-    if(bu>=0.){
-      // wound by the spin of the merging black holes: straight arms at first, turning with them; inner parts turn
-      // faster than outer ones, so the arms wind into spirals, and the winding stops as the two become one
-      float D=1.-.6*K*log(r/R0)/(BTURNS*TAU);     // already a little wound when they appear
-      th+=D*binarySpin()+bal;
-    }
     float rr=r+g.y*mix(.05,.14,cloud)*mix(1.4,.6,edge)*mix(1.,.5,spur);
     P=vec3(rr*cos(th),rr*sin(th),g.z*mix(.03,.065,cloud)*mix(1.6,.7,edge)*puff);
     P.xy*=spread;
@@ -466,15 +460,22 @@ void milkyWay(out vec3 P,out vec3 C,out float S,out float A){
       // glowing hydrogen where stars are being born, and the hot blue clusters that just formed there
       float big=step(kh.y,.25);
       float blue=step(.62,kh.z);
-      float kr=mix(.014,.034,big)*(1.+.6*home);
+      float kr=mix(mix(.014,.034,big),.07,home);
       float ko=(kh.z-.3)*1.2*width/r+blue*.03/r;         // young clusters drift just downstream of the gas that made them
       thk+=nq*nq*3.5/(r*spread+.25)-ko-abs(g.x)*.012/r;
       P=vec3(r*cos(thk),r*sin(thk),0.)*spread+g*kr*vec3(1.,1.,.6);
       C=mix(vec3(1.25,.36,.58),vec3(.7,.82,1.3),blue)*mix(1.,.7,edge)*(.6+.5*r2.x);S=mix(.02,.03,big);A=.42*q;
+      if(home>.5){C=vec3(1.35,.38,.6)*(.7+.5*r2.x);S=.032;A=.55*q;}
     }
   }
   // the forming galaxy glows pink with gas
   C=mix(vec3(1.,.48,.6)*.55*(.6+.6*r3.y),C,smoothstep(0.,.75,q));
+  if(bu>=0.){
+    // just after the merger the whole new galaxy (bulge, disc, arms and star-forming knots together) is still
+    // turning off the merger's spin, slowing as it settles; the outskirts lag a little, which winds the arms
+    float spinLeft=1.2*TAU*pow(max(1.-bu,0.),.625);
+    P.xy=rot(-spinLeft*mix(1.,.65,smoothstep(.3,2.8,length(P.xy))))*P.xy;
+  }
   P.yz=rot(1.05)*P.yz;
 }
 
