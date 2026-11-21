@@ -35,7 +35,7 @@ Every stage is labelled **Observed**, **Model-dependent** or **Artistic interpre
 
 ## Licence
 
-The code (`index.html`, `audio.js`, `tests/`, `.github/`, `package.json`) is [MIT](LICENSE). The content (the Atlas text, docs, the name and media made from the experience) is all rights reserved; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
+The code (`index.html`, `audio.js`, `tests/`, `.github/`, `package.json`) is free for noncommercial use under the [PolyForm Noncommercial License 1.0.0](LICENSE); commercial use needs a licence from the copyright holder (open an issue to ask). The content (the Atlas text, docs, the name and media made from the experience) is all rights reserved; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
 
 ## Film
 
