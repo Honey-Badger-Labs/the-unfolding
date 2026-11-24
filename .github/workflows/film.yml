@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 355
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: 22 }
-      - run: npm i --no-save puppeteer-core@23 @fontsource/cormorant-garamond @fontsource/ibm-plex-mono
+      - run: npm i --no-save puppeteer-core@23.11.1 @fontsource/cormorant-garamond@5.3.0 @fontsource/ibm-plex-mono@5.3.0
       - run: which ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - name: Render
         run: |
@@ -29,7 +29,7 @@ jobs:
           node tools/film.mjs --out the-unfolding.mp4 --width ${{ inputs.width }} --height ${{ inputs.height }} \
             --fps ${{ inputs.fps }} --particles ${{ inputs.particles }} --from ${{ inputs.from }} ${TO:+--to $TO} \
             --chrome "$(which google-chrome)"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: the-unfolding-${{ inputs.width }}x${{ inputs.height }}
           path: |
